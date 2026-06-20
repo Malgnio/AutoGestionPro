@@ -161,7 +161,7 @@ export default function CreditsScreen() {
       </View>
 
       {showForm && (
-        <TouchableOpacity style={styles.overlay} onPress={() => { setShowForm(false); resetForm() }} activeOpacity={1} />
+        <View style={styles.overlay} />
       )}
 
       <View style={[styles.drawer, showForm && styles.drawerOpen]}>
