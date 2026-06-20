@@ -19,6 +19,19 @@ type SaleOption = {
   rut: string
 }
 
+const CREDIT_COMMISSION = [
+  { min: 9, max: Infinity, rate: 0.17 },
+  { min: 8, max: 8, rate: 0.16 },
+  { min: 6, max: 7, rate: 0.12 },
+  { min: 3, max: 5, rate: 0.10 },
+  { min: 2, max: 2, rate: 0.05 },
+  { min: 1, max: 1, rate: 0.04 },
+]
+
+function getCreditRate(count: number) {
+  return CREDIT_COMMISSION.find(r => count >= r.min && count <= r.max)?.rate ?? 0
+}
+
 const CREDIT_TYPES = ['OI', 'CC'] as const
 const CREDIT_TYPE_LABEL: Record<string, string> = { OI: 'Crédito Interno', CC: 'Crédito Externo' }
 const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
@@ -166,8 +179,20 @@ export default function CreditsScreen() {
 
         {credits.length > 0 && (
           <View style={styles.totalBanner}>
-            <Text style={styles.totalLabel}>Total C. Dealer — {MONTHS[selectedMonth]} {selectedYear}</Text>
-            <Text style={styles.totalValue}>${total.toLocaleString('es-CL')}</Text>
+            <View style={styles.totalItem}>
+              <Text style={styles.totalLabel}>Total C. Dealer</Text>
+              <Text style={styles.totalValue}>${total.toLocaleString('es-CL')}</Text>
+            </View>
+            <View style={styles.totalDivider} />
+            <View style={styles.totalItem}>
+              <Text style={styles.totalLabel}>Comisión sin IVA</Text>
+              <Text style={styles.totalValue}>${Math.round(total * 0.81).toLocaleString('es-CL')}</Text>
+            </View>
+            <View style={styles.totalDivider} />
+            <View style={styles.totalItem}>
+              <Text style={styles.totalLabel}>Comisión a pagar ({(getCreditRate(credits.length) * 100).toFixed(0)}% · {credits.length} créd.)</Text>
+              <Text style={[styles.totalValue, styles.totalHighlight]}>${Math.round(total * 0.81 * getCreditRate(credits.length)).toLocaleString('es-CL')}</Text>
+            </View>
           </View>
         )}
 
@@ -304,9 +329,12 @@ const styles = StyleSheet.create({
   pageTitle: { fontSize: 24, fontWeight: 'bold', color: Colors.text },
   addButton: { backgroundColor: Colors.primary, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8 },
   addButtonText: { color: Colors.white, fontWeight: 'bold', fontSize: 14 },
-  totalBanner: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: Colors.success, marginHorizontal: 32, borderRadius: 10, paddingHorizontal: 20, paddingVertical: 12, marginBottom: 12 },
-  totalLabel: { color: Colors.white, fontSize: 14 },
-  totalValue: { color: Colors.white, fontSize: 18, fontWeight: 'bold' },
+  totalBanner: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.primary, marginHorizontal: 32, borderRadius: 10, paddingHorizontal: 20, paddingVertical: 14, marginBottom: 12, gap: 8 },
+  totalItem: { flex: 1, alignItems: 'center' },
+  totalDivider: { width: 1, height: 36, backgroundColor: 'rgba(255,255,255,0.2)' },
+  totalLabel: { color: 'rgba(255,255,255,0.7)', fontSize: 11, marginBottom: 4, textAlign: 'center' },
+  totalValue: { color: Colors.white, fontSize: 16, fontWeight: 'bold', textAlign: 'center' },
+  totalHighlight: { color: '#4CD964', fontSize: 18 },
   tableContainer: { flex: 1, paddingHorizontal: 32, paddingTop: 20 },
   table: { backgroundColor: Colors.white, borderRadius: 12, overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 6, elevation: 2 },
   tableRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16 },
