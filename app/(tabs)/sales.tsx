@@ -18,6 +18,7 @@ type Sale = {
 
 const PURCHASE_TYPES = ['R', 'F', 'FL', 'SEG'] as const
 const PURCHASE_TYPE_LABEL: Record<string, string> = { R: 'Retail', F: 'Flota', FL: 'Fleet', SEG: 'Seguro' }
+const BADGE_COLOR: Record<string, string> = { R: '#2E86C1', F: '#2E86C1', FL: '#1B4F72', SEG: '#8E44AD' }
 const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
 
 export default function SalesScreen() {
@@ -157,8 +158,8 @@ export default function SalesScreen() {
                     <Text style={[styles.cell, styles.cellChassis]}>{item.chassis}</Text>
                     <Text style={[styles.cell, styles.cellOdv]}>{item.odv}</Text>
                     <View style={[styles.cell, styles.cellType]}>
-                      <View style={styles.badge}>
-                        <Text style={styles.badgeText}>{PURCHASE_TYPE_LABEL[item.purchase_type]}</Text>
+                      <View style={[styles.badge, { backgroundColor: BADGE_COLOR[item.purchase_type] ?? Colors.secondary }]}>
+                        <Text style={styles.badgeText}>{item.purchase_type}</Text>
                       </View>
                     </View>
                     <View style={[styles.cell, styles.cellAction]}>
