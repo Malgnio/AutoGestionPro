@@ -232,40 +232,34 @@ export default function CreditsScreen() {
           {error ? <Text style={styles.formError}>{error}</Text> : null}
 
           <Text style={styles.label}>Nombre cliente</Text>
-          <View style={styles.dropdownWrap}>
-            <TextInput
-              style={styles.input}
-              value={customerName}
-              onChangeText={v => {
-                setCustomerName(v)
-                setShowDropdown(true)
-                setRut('')
-              }}
-              onFocus={() => setShowDropdown(true)}
-              placeholderTextColor={Colors.textLight}
-              placeholder="Buscar cliente del mes..."
-            />
-            {showDropdown && filteredOptions.length > 0 && (
-              <View style={styles.dropdown}>
-                {filteredOptions.map((s, i) => (
-                  <TouchableOpacity
-                    key={i}
-                    style={styles.dropdownItem}
-                    onPress={() => selectSale(s)}
-                  >
-                    <Text style={styles.dropdownName}>{s.customer_name}</Text>
-                    <Text style={styles.dropdownRut}>{s.rut}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
-          </View>
+          <TextInput
+            style={styles.input}
+            value={customerName}
+            onChangeText={v => { setCustomerName(v); setShowDropdown(true); setRut('') }}
+            onFocus={() => setShowDropdown(true)}
+            placeholderTextColor={Colors.textLight}
+            placeholder="Buscar cliente del mes..."
+          />
+          {showDropdown && filteredOptions.length > 0 && (
+            <ScrollView style={styles.dropdown} nestedScrollEnabled keyboardShouldPersistTaps="handled">
+              {filteredOptions.map((s, i) => (
+                <TouchableOpacity
+                  key={i}
+                  style={[styles.dropdownItem, i === filteredOptions.length - 1 && { borderBottomWidth: 0 }]}
+                  onPress={() => selectSale(s)}
+                >
+                  <Text style={styles.dropdownName}>{s.customer_name}</Text>
+                  <Text style={styles.dropdownRut}>{s.rut}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          )}
 
           <Text style={styles.label}>RUT</Text>
           <TextInput
             style={[styles.input, styles.inputReadonly]}
             value={rut}
-            onChangeText={setRut}
+            editable={false}
             placeholderTextColor={Colors.textLight}
             placeholder="Se autocompleta al elegir cliente"
           />
@@ -360,12 +354,9 @@ const styles = StyleSheet.create({
   label: { fontSize: 13, color: Colors.textLight, marginBottom: 6, marginTop: 14 },
   input: { borderWidth: 1, borderColor: Colors.border, borderRadius: 8, padding: 10, fontSize: 14, color: Colors.text, outlineStyle: 'none' } as any,
   inputReadonly: { backgroundColor: '#F8F9FA', color: Colors.textLight },
-  dropdownWrap: { position: 'relative' as any },
   dropdown: {
-    position: 'absolute' as any, top: 44, left: 0, right: 0,
-    backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border,
-    borderRadius: 8, zIndex: 200, maxHeight: 240,
-    shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 8,
+    backgroundColor: '#F8F9FA', borderWidth: 1, borderColor: Colors.border,
+    borderRadius: 8, maxHeight: 200, marginTop: 4,
   },
   dropdownItem: {
     paddingHorizontal: 14, paddingVertical: 10,
