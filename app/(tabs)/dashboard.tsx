@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native'
 import { supabase } from '../../lib/supabase'
 import { Colors } from '../../constants/colors'
@@ -78,6 +78,8 @@ export default function DashboardScreen() {
     return sum + m.dealer * 0.81 * rate
   }, 0)
 
+  const [hoveredMonth, setHoveredMonth] = useState<number | null>(null)
+
   const maxSales = Math.max(...monthData.map(m => m.sales), 1)
   const maxCredits = Math.max(...monthData.map(m => m.credits), 1)
   const maxBar = Math.max(maxSales, maxCredits)
@@ -145,21 +147,54 @@ export default function DashboardScreen() {
             </View>
 
             <View style={styles.chart}>
-              {monthData.map((m, i) => (
-                <View key={i} style={styles.barGroup}>
-                  <View style={styles.bars}>
-                    <View style={styles.barWrapper}>
-                      <Text style={styles.barVal}>{m.sales > 0 ? m.sales : ''}</Text>
-                      <View style={[styles.bar, { height: Math.round((m.sales / maxBar) * 140), backgroundColor: Colors.secondary }]} />
+              {monthData.map((m, i) => {
+                const isHovered = hoveredMonth === i
+                const rate = getCreditRate(m.credits)
+                const comision = Math.round(m.dealer * 0.81 * rate)
+                const penetracion = m.sales > 0 ? Math.round((m.credits / m.sales) * 100) : 0
+                return (
+                  <View
+                    key={i}
+                    style={styles.barGroup}
+                    // @ts-ignore
+                    onMouseEnter={() => setHoveredMonth(i)}
+                    onMouseLeave={() => setHoveredMonth(null)}
+                  >
+                    {isHovered && (
+                      <View style={[styles.tooltip, i >= 9 ? styles.tooltipLeft : styles.tooltipCenter]}>
+                        <Text style={styles.tooltipMonth}>{MONTH_LABELS[i]}-{String(selectedYear).slice(2)}</Text>
+                        <View style={styles.tooltipRow}>
+                          <View style={[styles.tooltipDot, { backgroundColor: Colors.secondary }]} />
+                          <Text style={styles.tooltipText}>Ventas: <Text style={styles.tooltipBold}>{m.sales}</Text></Text>
+                        </View>
+                        <View style={styles.tooltipRow}>
+                          <View style={[styles.tooltipDot, { backgroundColor: Colors.success }]} />
+                          <Text style={styles.tooltipText}>Créditos: <Text style={styles.tooltipBold}>{m.credits}</Text></Text>
+                        </View>
+                        <View style={styles.tooltipRow}>
+                          <Text style={styles.tooltipText}>Penetración: <Text style={styles.tooltipBold}>{penetracion}%</Text></Text>
+                        </View>
+                        {comision > 0 && (
+                          <View style={styles.tooltipRow}>
+                            <Text style={[styles.tooltipText, { color: Colors.success }]}>Comisión: <Text style={[styles.tooltipBold, { color: Colors.success }]}>${comision.toLocaleString('es-CL')}</Text></Text>
+                          </View>
+                        )}
+                      </View>
+                    )}
+                    <View style={styles.bars}>
+                      <View style={styles.barWrapper}>
+                        <Text style={styles.barVal}>{m.sales > 0 ? m.sales : ''}</Text>
+                        <View style={[styles.bar, { height: Math.round((m.sales / maxBar) * 140), backgroundColor: isHovered ? Colors.primary : Colors.secondary }]} />
+                      </View>
+                      <View style={styles.barWrapper}>
+                        <Text style={styles.barVal}>{m.credits > 0 ? m.credits : ''}</Text>
+                        <View style={[styles.bar, { height: Math.round((m.credits / maxBar) * 140), backgroundColor: isHovered ? '#27AE60' : Colors.success }]} />
+                      </View>
                     </View>
-                    <View style={styles.barWrapper}>
-                      <Text style={styles.barVal}>{m.credits > 0 ? m.credits : ''}</Text>
-                      <View style={[styles.bar, { height: Math.round((m.credits / maxBar) * 140), backgroundColor: Colors.success }]} />
-                    </View>
+                    <Text style={[styles.barLabel, isHovered && { color: Colors.primary, fontWeight: 'bold' }]}>{MONTH_LABELS[i]}</Text>
                   </View>
-                  <Text style={styles.barLabel}>{MONTH_LABELS[i]}</Text>
-                </View>
-              ))}
+                )
+              })}
             </View>
           </View>
 
@@ -199,4 +234,17 @@ const styles = StyleSheet.create({
   bar: { width: 14, borderRadius: 3, minHeight: 2 },
   barVal: { fontSize: 9, color: Colors.textLight, marginBottom: 2 },
   barLabel: { fontSize: 10, color: Colors.textLight, textAlign: 'center' },
+  tooltip: {
+    position: 'absolute' as any, bottom: 36, zIndex: 10,
+    backgroundColor: Colors.white, borderRadius: 10, padding: 14,
+    shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 12, elevation: 8,
+    borderWidth: 1, borderColor: Colors.border, minWidth: 160,
+  },
+  tooltipCenter: { left: '50%' as any, transform: [{ translateX: -80 }] },
+  tooltipLeft: { right: 0 },
+  tooltipMonth: { fontSize: 13, fontWeight: 'bold', color: Colors.text, marginBottom: 8 },
+  tooltipRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
+  tooltipDot: { width: 8, height: 8, borderRadius: 4 },
+  tooltipText: { fontSize: 12, color: Colors.textLight },
+  tooltipBold: { fontWeight: 'bold', color: Colors.text },
 })
