@@ -14,6 +14,11 @@ type Credit = {
   sale_month: string
 }
 
+type SaleOption = {
+  customer_name: string
+  rut: string
+}
+
 const CREDIT_TYPES = ['CI', 'CC'] as const
 const CREDIT_TYPE_LABEL: Record<string, string> = { CI: 'Crédito Interno', CC: 'Crédito Externo' }
 const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
@@ -23,8 +28,10 @@ export default function CreditsScreen() {
   const [selectedYear, setSelectedYear] = useState(now.getFullYear())
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth())
   const [credits, setCredits] = useState<Credit[]>([])
+  const [salesOptions, setSalesOptions] = useState<SaleOption[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
+  const [showDropdown, setShowDropdown] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -35,6 +42,7 @@ export default function CreditsScreen() {
   const [creditType, setCreditType] = useState<'CI' | 'CC'>('CI')
 
   useEffect(() => { loadCredits() }, [selectedYear, selectedMonth])
+  useEffect(() => { loadSalesOptions() }, [selectedYear, selectedMonth])
 
   async function loadCredits() {
     setLoading(true)
@@ -53,8 +61,29 @@ export default function CreditsScreen() {
     setLoading(false)
   }
 
+  async function loadSalesOptions() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+
+    const start = new Date(selectedYear, selectedMonth, 1).toISOString().split('T')[0]
+    const end = new Date(selectedYear, selectedMonth + 1, 0).toISOString().split('T')[0]
+
+    const { data } = await supabase
+      .from('sales').select('customer_name, rut').eq('user_id', user.id)
+      .gte('sale_month', start).lte('sale_month', end)
+      .order('created_at', { ascending: true })
+
+    setSalesOptions(data ?? [])
+  }
+
   function resetForm() {
-    setCustomerName(''); setRut(''); setDealerCost(''); setCreditType('CI'); setError(''); setEditingId(null)
+    setCustomerName(''); setRut(''); setDealerCost(''); setCreditType('CI'); setError(''); setEditingId(null); setShowDropdown(false)
+  }
+
+  function selectSale(sale: SaleOption) {
+    setCustomerName(sale.customer_name)
+    setRut(sale.rut)
+    setShowDropdown(false)
   }
 
   function openEdit(item: Credit) {
@@ -111,6 +140,11 @@ export default function CreditsScreen() {
   }
 
   const total = credits.reduce((sum, c) => sum + Number(c.dealer_cost), 0)
+
+  // Filtrar opciones según lo que se escribe
+  const filteredOptions = salesOptions.filter(s =>
+    s.customer_name.toLowerCase().includes(customerName.toLowerCase())
+  )
 
   return (
     <View style={styles.container}>
@@ -194,29 +228,47 @@ export default function CreditsScreen() {
           </TouchableOpacity>
         </View>
 
-        <ScrollView style={styles.drawerBody} showsVerticalScrollIndicator={false}>
+        <ScrollView style={styles.drawerBody} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
           {error ? <Text style={styles.formError}>{error}</Text> : null}
 
           <Text style={styles.label}>Nombre cliente</Text>
-          <TextInput
-            style={styles.input}
-            value={customerName}
-            onChangeText={v => setCustomerName(v.replace(/\b\w/g, c => c.toUpperCase()).replace(/\B\w/g, c => c.toLowerCase()))}
-            placeholderTextColor={Colors.textLight}
-            placeholder="Nombre completo"
-          />
+          <View style={styles.dropdownWrap}>
+            <TextInput
+              style={styles.input}
+              value={customerName}
+              onChangeText={v => {
+                setCustomerName(v)
+                setShowDropdown(true)
+                setRut('')
+              }}
+              onFocus={() => setShowDropdown(true)}
+              placeholderTextColor={Colors.textLight}
+              placeholder="Buscar cliente del mes..."
+            />
+            {showDropdown && filteredOptions.length > 0 && (
+              <View style={styles.dropdown}>
+                {filteredOptions.map((s, i) => (
+                  <TouchableOpacity
+                    key={i}
+                    style={styles.dropdownItem}
+                    onPress={() => selectSale(s)}
+                  >
+                    <Text style={styles.dropdownName}>{s.customer_name}</Text>
+                    <Text style={styles.dropdownRut}>{s.rut}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
 
           <Text style={styles.label}>RUT</Text>
           <TextInput
-            style={[styles.input, rut.length > 3 && !validateRut(rut) && styles.inputError]}
+            style={[styles.input, styles.inputReadonly]}
             value={rut}
             onChangeText={setRut}
             placeholderTextColor={Colors.textLight}
-            placeholder="12.345.678-9"
+            placeholder="Se autocompleta al elegir cliente"
           />
-          {rut.length > 3 && !validateRut(rut) && (
-            <Text style={styles.fieldError}>RUT inválido</Text>
-          )}
 
           <Text style={styles.label}>C. Dealer (monto)</Text>
           <TextInput style={styles.input} value={dealerCost} onChangeText={setDealerCost} keyboardType="numeric" placeholderTextColor={Colors.textLight} placeholder="Ej: 1500000" />
@@ -266,14 +318,14 @@ const styles = StyleSheet.create({
   tableHead: { backgroundColor: Colors.primary },
   rowEven: { backgroundColor: Colors.white },
   rowOdd: { backgroundColor: '#F8F9FA' },
-  cell: { fontSize: 14, color: Colors.text, paddingHorizontal: 8 },
-  headCell: { color: Colors.white, fontWeight: 'bold', fontSize: 13 },
-  cellN: { width: 40 },
+  cell: { fontSize: 13, color: Colors.text, paddingHorizontal: 6 },
+  headCell: { color: Colors.white, fontWeight: 'bold', fontSize: 12 },
+  cellN: { width: 32 },
   cellName: { flex: 2 },
   cellRut: { flex: 1.2 },
   cellCost: { flex: 1.2 },
   cellType: { width: 90 },
-  cellAction: { width: 90, flexDirection: 'row', justifyContent: 'flex-end', gap: 4 },
+  cellAction: { width: 72, flexDirection: 'row', justifyContent: 'flex-end', gap: 4 },
   badge: { borderRadius: 4, paddingHorizontal: 8, paddingVertical: 2, alignSelf: 'flex-start' },
   badgeCI: { backgroundColor: Colors.secondary },
   badgeCC: { backgroundColor: Colors.accent },
@@ -307,8 +359,20 @@ const styles = StyleSheet.create({
   formError: { backgroundColor: '#FDECEA', color: Colors.danger, borderRadius: 8, padding: 12, marginBottom: 16, fontSize: 14 },
   label: { fontSize: 13, color: Colors.textLight, marginBottom: 6, marginTop: 14 },
   input: { borderWidth: 1, borderColor: Colors.border, borderRadius: 8, padding: 10, fontSize: 14, color: Colors.text, outlineStyle: 'none' } as any,
-  inputError: { borderColor: Colors.danger },
-  fieldError: { fontSize: 12, color: Colors.danger, marginTop: 4 },
+  inputReadonly: { backgroundColor: '#F8F9FA', color: Colors.textLight },
+  dropdownWrap: { position: 'relative' as any },
+  dropdown: {
+    position: 'absolute' as any, top: 44, left: 0, right: 0,
+    backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border,
+    borderRadius: 8, zIndex: 200, maxHeight: 240,
+    shadowColor: '#000', shadowOpacity: 0.1, shadowRadius: 8,
+  },
+  dropdownItem: {
+    paddingHorizontal: 14, paddingVertical: 10,
+    borderBottomWidth: 1, borderBottomColor: '#F0F0F0',
+  },
+  dropdownName: { fontSize: 14, color: Colors.text, fontWeight: '500' },
+  dropdownRut: { fontSize: 12, color: Colors.textLight, marginTop: 2 },
   typeRow: { flexDirection: 'row', gap: 8, marginTop: 4 },
   typeBtn: { flex: 1, padding: 10, borderRadius: 6, borderWidth: 1, borderColor: Colors.border, alignItems: 'center' },
   typeBtnActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
