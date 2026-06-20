@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native'
 import { supabase } from '../../lib/supabase'
 import { Colors } from '../../constants/colors'
+import PeriodSelector from '../../components/PeriodSelector'
 
 const SALES_COMMISSION = [
   { min: 15, max: Infinity, rate: 0.12 },
@@ -20,6 +21,8 @@ const CREDIT_COMMISSION = [
   { min: 1, max: 1, rate: 0.04 },
 ]
 
+const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+
 function getSalesRate(units: number) {
   return SALES_COMMISSION.find(r => units >= r.min && units <= r.max)?.rate ?? 0
 }
@@ -29,24 +32,23 @@ function getCreditRate(count: number) {
 }
 
 export default function DashboardScreen() {
+  const now = new Date()
+  const [selectedYear, setSelectedYear] = useState(now.getFullYear())
+  const [selectedMonth, setSelectedMonth] = useState(now.getMonth())
   const [loading, setLoading] = useState(true)
   const [salesCount, setSalesCount] = useState(0)
   const [creditsCount, setCreditsCount] = useState(0)
   const [totalDealer, setTotalDealer] = useState(0)
-  const [currentMonth] = useState(() =>
-    new Date().toLocaleString('es-CL', { month: 'long', year: 'numeric' })
-  )
 
-  useEffect(() => { loadData() }, [])
+  useEffect(() => { loadData() }, [selectedYear, selectedMonth])
 
   async function loadData() {
     setLoading(true)
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
-    const now = new Date()
-    const start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
-    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0]
+    const start = new Date(selectedYear, selectedMonth, 1).toISOString().split('T')[0]
+    const end = new Date(selectedYear, selectedMonth + 1, 0).toISOString().split('T')[0]
 
     const [{ data: sales }, { data: credits }] = await Promise.all([
       supabase.from('sales').select('id').eq('user_id', user.id).gte('sale_month', start).lte('sale_month', end),
@@ -65,68 +67,81 @@ export default function DashboardScreen() {
   const penetration = salesCount > 0 ? Math.round((creditsCount / salesCount) * 100) : 0
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.pageTitle}>Resumen — <Text style={styles.month}>{currentMonth}</Text></Text>
+    <View style={styles.container}>
+      <View style={styles.topBar}>
+        <Text style={styles.pageTitle}>Resumen — <Text style={styles.monthLabel}>{MONTHS[selectedMonth]} {selectedYear}</Text></Text>
+      </View>
 
-      {loading ? (
-        <ActivityIndicator color={Colors.primary} style={{ marginTop: 60 }} />
-      ) : (
-        <>
-          <View style={styles.statsRow}>
-            <View style={[styles.statCard, { backgroundColor: Colors.secondary }]}>
-              <Text style={styles.statLabel}>Unidades vendidas</Text>
-              <Text style={styles.statValue}>{salesCount}</Text>
-              <Text style={styles.statSub}>Tasa: {(salesRate * 100).toFixed(0)}%</Text>
-            </View>
-            <View style={[styles.statCard, { backgroundColor: Colors.success }]}>
-              <Text style={styles.statLabel}>Créditos</Text>
-              <Text style={styles.statValue}>{creditsCount}</Text>
-              <Text style={styles.statSub}>Tasa: {(creditRate * 100).toFixed(0)}%</Text>
-            </View>
-            <View style={[styles.statCard, { backgroundColor: Colors.accent }]}>
-              <Text style={styles.statLabel}>Penetración crédito</Text>
-              <Text style={styles.statValue}>{penetration}%</Text>
-              <Text style={styles.statSub}>Meta: 50%</Text>
-            </View>
-            <View style={[styles.statCard, { backgroundColor: Colors.primary }]}>
-              <Text style={styles.statLabel}>Comisión créditos</Text>
-              <Text style={styles.statValue}>${creditCommission.toLocaleString('es-CL')}</Text>
-              <Text style={styles.statSub}>Sin IVA</Text>
-            </View>
-          </View>
+      <PeriodSelector
+        selectedYear={selectedYear}
+        selectedMonth={selectedMonth}
+        onYearChange={setSelectedYear}
+        onMonthChange={setSelectedMonth}
+      />
 
-          <View style={styles.summaryCard}>
-            <Text style={styles.summaryTitle}>Detalle comisiones</Text>
-            <View style={styles.summaryGrid}>
-              <View style={styles.summaryItem}>
-                <Text style={styles.summaryLabel}>Total C. Dealer</Text>
-                <Text style={styles.summaryValue}>${totalDealer.toLocaleString('es-CL')}</Text>
+      <ScrollView style={styles.scrollArea} contentContainerStyle={styles.content}>
+        {loading ? (
+          <ActivityIndicator color={Colors.primary} style={{ marginTop: 60 }} />
+        ) : (
+          <>
+            <View style={styles.statsRow}>
+              <View style={[styles.statCard, { backgroundColor: Colors.secondary }]}>
+                <Text style={styles.statLabel}>Unidades vendidas</Text>
+                <Text style={styles.statValue}>{salesCount}</Text>
+                <Text style={styles.statSub}>Tasa: {(salesRate * 100).toFixed(0)}%</Text>
               </View>
-              <View style={styles.summaryItem}>
-                <Text style={styles.summaryLabel}>Tasa por créditos ({creditsCount} créditos)</Text>
-                <Text style={styles.summaryValue}>{(creditRate * 100).toFixed(0)}%</Text>
+              <View style={[styles.statCard, { backgroundColor: Colors.success }]}>
+                <Text style={styles.statLabel}>Créditos</Text>
+                <Text style={styles.statValue}>{creditsCount}</Text>
+                <Text style={styles.statSub}>Tasa: {(creditRate * 100).toFixed(0)}%</Text>
               </View>
-              <View style={styles.summaryItem}>
-                <Text style={styles.summaryLabel}>Comisión bruta</Text>
-                <Text style={[styles.summaryValue, { color: Colors.success }]}>${creditCommission.toLocaleString('es-CL')}</Text>
+              <View style={[styles.statCard, { backgroundColor: Colors.accent }]}>
+                <Text style={styles.statLabel}>Penetración crédito</Text>
+                <Text style={styles.statValue}>{penetration}%</Text>
+                <Text style={styles.statSub}>Meta: 50%</Text>
               </View>
-              <View style={styles.summaryItem}>
-                <Text style={styles.summaryLabel}>Tasa por unidades ({salesCount} unidades)</Text>
-                <Text style={styles.summaryValue}>{(salesRate * 100).toFixed(0)}%</Text>
+              <View style={[styles.statCard, { backgroundColor: Colors.primary }]}>
+                <Text style={styles.statLabel}>Comisión créditos</Text>
+                <Text style={styles.statValue}>${creditCommission.toLocaleString('es-CL')}</Text>
+                <Text style={styles.statSub}>Sin IVA</Text>
               </View>
             </View>
-          </View>
-        </>
-      )}
-    </ScrollView>
+
+            <View style={styles.summaryCard}>
+              <Text style={styles.summaryTitle}>Detalle comisiones</Text>
+              <View style={styles.summaryGrid}>
+                <View style={styles.summaryItem}>
+                  <Text style={styles.summaryLabel}>Total C. Dealer</Text>
+                  <Text style={styles.summaryValue}>${totalDealer.toLocaleString('es-CL')}</Text>
+                </View>
+                <View style={styles.summaryItem}>
+                  <Text style={styles.summaryLabel}>Tasa por créditos ({creditsCount} créditos)</Text>
+                  <Text style={styles.summaryValue}>{(creditRate * 100).toFixed(0)}%</Text>
+                </View>
+                <View style={styles.summaryItem}>
+                  <Text style={styles.summaryLabel}>Comisión bruta</Text>
+                  <Text style={[styles.summaryValue, { color: Colors.success }]}>${creditCommission.toLocaleString('es-CL')}</Text>
+                </View>
+                <View style={styles.summaryItem}>
+                  <Text style={styles.summaryLabel}>Tasa por unidades ({salesCount} unidades)</Text>
+                  <Text style={styles.summaryValue}>{(salesRate * 100).toFixed(0)}%</Text>
+                </View>
+              </View>
+            </View>
+          </>
+        )}
+      </ScrollView>
+    </View>
   )
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  content: { padding: 32, gap: 24 },
+  topBar: { padding: 32, paddingBottom: 16 },
   pageTitle: { fontSize: 24, fontWeight: 'bold', color: Colors.text },
-  month: { color: Colors.textLight, textTransform: 'capitalize', fontWeight: 'normal' },
+  monthLabel: { color: Colors.textLight, fontWeight: 'normal' },
+  scrollArea: { flex: 1 },
+  content: { padding: 32, gap: 24 },
   statsRow: { flexDirection: 'row', gap: 16 },
   statCard: { flex: 1, borderRadius: 12, padding: 24 },
   statLabel: { fontSize: 13, color: 'rgba(255,255,255,0.8)', marginBottom: 12 },
