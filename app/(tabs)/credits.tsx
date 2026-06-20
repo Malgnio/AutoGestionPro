@@ -177,24 +177,30 @@ export default function CreditsScreen() {
           onMonthChange={setSelectedMonth}
         />
 
-        {credits.length > 0 && (
-          <View style={styles.totalBanner}>
-            <View style={styles.totalItem}>
-              <Text style={styles.totalLabel}>Total C. Dealer</Text>
-              <Text style={styles.totalValue}>${total.toLocaleString('es-CL')}</Text>
+        {!loading && (() => {
+          const rate = getCreditRate(credits.length)
+          const sinIva = total * 0.81
+          const comision = sinIva * rate
+          return (
+            <View style={styles.kpiRow}>
+              <View style={[styles.kpiCard, styles.kpiHighlight]}>
+                <Text style={styles.kpiLabel}>Créditos</Text>
+                <Text style={styles.kpiValue}>{credits.length}</Text>
+                <Text style={styles.kpiSub}>Tasa: {(rate * 100).toFixed(0)}%</Text>
+              </View>
+              <View style={styles.kpiCard}>
+                <Text style={[styles.kpiLabel, { color: Colors.textLight }]}>Total C. Dealer</Text>
+                <Text style={[styles.kpiValue, { color: Colors.text, fontSize: 20 }]}>${total.toLocaleString('es-CL')}</Text>
+                <Text style={[styles.kpiSub, { color: Colors.textLight }]}>Sin IVA: ${Math.round(sinIva).toLocaleString('es-CL')}</Text>
+              </View>
+              <View style={styles.kpiCard}>
+                <Text style={[styles.kpiLabel, { color: Colors.textLight }]}>Comisión a pagar</Text>
+                <Text style={[styles.kpiValue, { color: Colors.success, fontSize: 20 }]}>${Math.round(comision).toLocaleString('es-CL')}</Text>
+                <Text style={[styles.kpiSub, { color: Colors.textLight }]}>Sin IVA × {(rate * 100).toFixed(0)}%</Text>
+              </View>
             </View>
-            <View style={styles.totalDivider} />
-            <View style={styles.totalItem}>
-              <Text style={styles.totalLabel}>Comisión sin IVA</Text>
-              <Text style={styles.totalValue}>${Math.round(total * 0.81).toLocaleString('es-CL')}</Text>
-            </View>
-            <View style={styles.totalDivider} />
-            <View style={styles.totalItem}>
-              <Text style={styles.totalLabel}>Comisión a pagar ({(getCreditRate(credits.length) * 100).toFixed(0)}% · {credits.length} créd.)</Text>
-              <Text style={[styles.totalValue, styles.totalHighlight]}>${Math.round(total * 0.81 * getCreditRate(credits.length)).toLocaleString('es-CL')}</Text>
-            </View>
-          </View>
-        )}
+          )
+        })()}
 
         {loading ? (
           <ActivityIndicator color={Colors.primary} style={{ marginTop: 60 }} />
@@ -329,13 +335,13 @@ const styles = StyleSheet.create({
   pageTitle: { fontSize: 24, fontWeight: 'bold', color: Colors.text },
   addButton: { backgroundColor: Colors.primary, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8 },
   addButtonText: { color: Colors.white, fontWeight: 'bold', fontSize: 14 },
-  totalBanner: { flexDirection: 'row', alignItems: 'center', backgroundColor: Colors.primary, marginHorizontal: 32, borderRadius: 10, paddingHorizontal: 20, paddingVertical: 14, marginBottom: 12, gap: 8 },
-  totalItem: { flex: 1, alignItems: 'center' },
-  totalDivider: { width: 1, height: 36, backgroundColor: 'rgba(255,255,255,0.2)' },
-  totalLabel: { color: 'rgba(255,255,255,0.7)', fontSize: 11, marginBottom: 4, textAlign: 'center' },
-  totalValue: { color: Colors.white, fontSize: 16, fontWeight: 'bold', textAlign: 'center' },
-  totalHighlight: { color: '#4CD964', fontSize: 18 },
-  tableContainer: { flex: 1, paddingHorizontal: 32, paddingTop: 20 },
+  kpiRow: { flexDirection: 'row', gap: 16, paddingHorizontal: 32, paddingTop: 4, paddingBottom: 4 },
+  kpiCard: { flex: 1, backgroundColor: Colors.white, borderRadius: 10, padding: 16, borderWidth: 1, borderColor: Colors.border },
+  kpiHighlight: { backgroundColor: Colors.success, borderColor: Colors.success },
+  kpiLabel: { fontSize: 12, color: 'rgba(255,255,255,0.8)', marginBottom: 6 },
+  kpiValue: { fontSize: 28, fontWeight: 'bold', color: Colors.white, marginBottom: 2 },
+  kpiSub: { fontSize: 12, color: 'rgba(255,255,255,0.7)' },
+  tableContainer: { flex: 1, paddingHorizontal: 32, paddingTop: 12 },
   table: { backgroundColor: Colors.white, borderRadius: 12, overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 6, elevation: 2 },
   tableRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16 },
   tableHead: { backgroundColor: Colors.primary },

@@ -16,6 +16,15 @@ type Sale = {
   sale_month: string
 }
 
+const SALES_COMMISSION = [
+  { min: 15, max: Infinity, rate: 0.12 },
+  { min: 12, max: 14, rate: 0.10 },
+  { min: 9, max: 11, rate: 0.09 },
+  { min: 6, max: 8, rate: 0.08 },
+  { min: 1, max: 5, rate: 0.06 },
+]
+function getSalesRate(u: number) { return SALES_COMMISSION.find(r => u >= r.min && u <= r.max)?.rate ?? 0 }
+
 const PURCHASE_TYPES = ['R', 'F', 'FL', 'SEG'] as const
 const PURCHASE_TYPE_LABEL: Record<string, string> = { R: 'Retail', F: 'Flota', FL: 'Fleet', SEG: 'Seguro' }
 const BADGE_COLOR: Record<string, string> = { R: '#2E86C1', F: '#2E86C1', FL: '#1B4F72', SEG: '#8E44AD' }
@@ -26,6 +35,7 @@ export default function SalesScreen() {
   const [selectedYear, setSelectedYear] = useState(now.getFullYear())
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth())
   const [sales, setSales] = useState<Sale[]>([])
+  const [creditsCount, setCreditsCount] = useState(0)
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -49,12 +59,16 @@ export default function SalesScreen() {
     const start = new Date(selectedYear, selectedMonth, 1).toISOString().split('T')[0]
     const end = new Date(selectedYear, selectedMonth + 1, 0).toISOString().split('T')[0]
 
-    const { data } = await supabase
-      .from('sales').select('*').eq('user_id', user.id)
-      .gte('sale_month', start).lte('sale_month', end)
-      .order('created_at', { ascending: true })
+    const [{ data }, { data: credits }] = await Promise.all([
+      supabase.from('sales').select('*').eq('user_id', user.id)
+        .gte('sale_month', start).lte('sale_month', end)
+        .order('created_at', { ascending: true }),
+      supabase.from('credits').select('id').eq('user_id', user.id)
+        .gte('sale_month', start).lte('sale_month', end),
+    ])
 
     setSales(data ?? [])
+    setCreditsCount(credits?.length ?? 0)
     setLoading(false)
   }
 
@@ -128,6 +142,31 @@ export default function SalesScreen() {
           onYearChange={setSelectedYear}
           onMonthChange={setSelectedMonth}
         />
+
+        {!loading && (() => {
+          const salesCount = sales.length
+          const salesRate = getSalesRate(salesCount)
+          const penetration = salesCount > 0 ? Math.round((creditsCount / salesCount) * 100) : 0
+          return (
+            <View style={styles.kpiRow}>
+              <View style={[styles.kpiCard, styles.kpiHighlight]}>
+                <Text style={styles.kpiLabel}>Unidades vendidas</Text>
+                <Text style={styles.kpiValue}>{salesCount}</Text>
+                <Text style={styles.kpiSub}>Tasa: {(salesRate * 100).toFixed(0)}%</Text>
+              </View>
+              <View style={styles.kpiCard}>
+                <Text style={[styles.kpiLabel, { color: Colors.textLight }]}>Créditos</Text>
+                <Text style={[styles.kpiValue, { color: Colors.text }]}>{creditsCount}</Text>
+                <Text style={[styles.kpiSub, { color: Colors.textLight }]}>del mes</Text>
+              </View>
+              <View style={styles.kpiCard}>
+                <Text style={[styles.kpiLabel, { color: Colors.textLight }]}>Penetración</Text>
+                <Text style={[styles.kpiValue, { color: Colors.text }]}>{penetration}%</Text>
+                <Text style={[styles.kpiSub, { color: Colors.textLight }]}>Meta: 50%</Text>
+              </View>
+            </View>
+          )
+        })()}
 
         {loading ? (
           <ActivityIndicator color={Colors.primary} style={{ marginTop: 60 }} />
@@ -260,7 +299,13 @@ const styles = StyleSheet.create({
   pageTitle: { fontSize: 24, fontWeight: 'bold', color: Colors.text },
   addButton: { backgroundColor: Colors.primary, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8 },
   addButtonText: { color: Colors.white, fontWeight: 'bold', fontSize: 14 },
-  tableContainer: { flex: 1, paddingHorizontal: 32, paddingTop: 20 },
+  kpiRow: { flexDirection: 'row', gap: 16, paddingHorizontal: 32, paddingTop: 20, paddingBottom: 4 },
+  kpiCard: { flex: 1, backgroundColor: Colors.white, borderRadius: 10, padding: 16, borderWidth: 1, borderColor: Colors.border },
+  kpiHighlight: { backgroundColor: Colors.secondary, borderColor: Colors.secondary },
+  kpiLabel: { fontSize: 12, color: 'rgba(255,255,255,0.8)', marginBottom: 6 },
+  kpiValue: { fontSize: 28, fontWeight: 'bold', color: Colors.white, marginBottom: 2 },
+  kpiSub: { fontSize: 12, color: 'rgba(255,255,255,0.7)' },
+  tableContainer: { flex: 1, paddingHorizontal: 32, paddingTop: 12 },
   table: { backgroundColor: Colors.white, borderRadius: 12, overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 6, elevation: 2 },
   tableRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16 },
   tableHead: { backgroundColor: Colors.primary },
