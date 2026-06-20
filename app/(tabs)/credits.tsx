@@ -166,11 +166,11 @@ export default function CreditsScreen() {
                       </View>
                     </View>
                     <View style={[styles.cell, styles.cellAction]}>
-                      <TouchableOpacity onPress={() => openEdit(item)}>
-                        <Text style={styles.editBtn}>Editar</Text>
+                      <TouchableOpacity onPress={() => openEdit(item)} style={styles.iconBtn}>
+                        <Text style={styles.iconEdit}>✏️</Text>
                       </TouchableOpacity>
-                      <TouchableOpacity onPress={() => handleDelete(item.id)}>
-                        <Text style={styles.deleteBtn}>Eliminar</Text>
+                      <TouchableOpacity onPress={() => handleDelete(item.id)} style={styles.iconBtn}>
+                        <Text style={styles.iconDelete}>🗑️</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -273,13 +273,14 @@ const styles = StyleSheet.create({
   cellRut: { flex: 1.2 },
   cellCost: { flex: 1.2 },
   cellType: { width: 90 },
-  cellAction: { width: 120, alignItems: 'flex-end', gap: 6 },
+  cellAction: { width: 90, flexDirection: 'row', justifyContent: 'flex-end', gap: 4 },
   badge: { borderRadius: 4, paddingHorizontal: 8, paddingVertical: 2, alignSelf: 'flex-start' },
   badgeCI: { backgroundColor: Colors.secondary },
   badgeCC: { backgroundColor: Colors.accent },
   badgeText: { color: Colors.white, fontSize: 11, fontWeight: '600' },
-  editBtn: { color: Colors.secondary, fontSize: 13 },
-  deleteBtn: { color: Colors.danger, fontSize: 13 },
+  iconBtn: { padding: 6, borderRadius: 6, backgroundColor: '#F0F3F6' },
+  iconEdit: { fontSize: 14 },
+  iconDelete: { fontSize: 14 },
   empty: { alignItems: 'center', padding: 60 },
   emptyText: { color: Colors.textLight, fontSize: 15 },
   overlay: {
