@@ -16,7 +16,6 @@ type Credit = {
 
 const CREDIT_TYPES = ['CI', 'CC'] as const
 const CREDIT_TYPE_LABEL: Record<string, string> = { CI: 'Crédito Interno', CC: 'Crédito Externo' }
-
 const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
 
 export default function CreditsScreen() {
@@ -28,6 +27,7 @@ export default function CreditsScreen() {
   const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [editingId, setEditingId] = useState<string | null>(null)
 
   const [customerName, setCustomerName] = useState('')
   const [rut, setRut] = useState('')
@@ -54,7 +54,17 @@ export default function CreditsScreen() {
   }
 
   function resetForm() {
-    setCustomerName(''); setRut(''); setDealerCost(''); setCreditType('CI'); setError('')
+    setCustomerName(''); setRut(''); setDealerCost(''); setCreditType('CI'); setError(''); setEditingId(null)
+  }
+
+  function openEdit(item: Credit) {
+    setEditingId(item.id)
+    setCustomerName(item.customer_name)
+    setRut(item.rut)
+    setDealerCost(String(item.dealer_cost))
+    setCreditType(item.credit_type)
+    setError('')
+    setShowForm(true)
   }
 
   async function handleSave() {
@@ -75,15 +85,23 @@ export default function CreditsScreen() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
-    const saleMonth = new Date(selectedYear, selectedMonth, 1).toISOString().split('T')[0]
+    const formattedRut = formatRut(rut)
 
-    const { error } = await supabase.from('credits').insert({
-      user_id: user.id, customer_name: customerName, rut: formatRut(rut),
-      dealer_cost: cost, credit_type: creditType, sale_month: saleMonth,
-    })
-
-    setSaving(false)
-    if (error) { setError(error.message) } else { setShowForm(false); resetForm(); loadCredits() }
+    if (editingId) {
+      const { error } = await supabase.from('credits').update({
+        customer_name: customerName, rut: formattedRut, dealer_cost: cost, credit_type: creditType,
+      }).eq('id', editingId)
+      setSaving(false)
+      if (error) { setError(error.message) } else { setShowForm(false); resetForm(); loadCredits() }
+    } else {
+      const saleMonth = new Date(selectedYear, selectedMonth, 1).toISOString().split('T')[0]
+      const { error } = await supabase.from('credits').insert({
+        user_id: user.id, customer_name: customerName, rut: formattedRut,
+        dealer_cost: cost, credit_type: creditType, sale_month: saleMonth,
+      })
+      setSaving(false)
+      if (error) { setError(error.message) } else { setShowForm(false); resetForm(); loadCredits() }
+    }
   }
 
   async function handleDelete(id: string) {
@@ -99,7 +117,7 @@ export default function CreditsScreen() {
       <View style={styles.main}>
         <View style={styles.header}>
           <Text style={styles.pageTitle}>Créditos — {MONTHS[selectedMonth]} {selectedYear}</Text>
-          <TouchableOpacity style={styles.addButton} onPress={() => setShowForm(true)}>
+          <TouchableOpacity style={styles.addButton} onPress={() => { resetForm(); setShowForm(true) }}>
             <Text style={styles.addButtonText}>+ Nuevo crédito</Text>
           </TouchableOpacity>
         </View>
@@ -148,6 +166,9 @@ export default function CreditsScreen() {
                       </View>
                     </View>
                     <View style={[styles.cell, styles.cellAction]}>
+                      <TouchableOpacity onPress={() => openEdit(item)}>
+                        <Text style={styles.editBtn}>Editar</Text>
+                      </TouchableOpacity>
                       <TouchableOpacity onPress={() => handleDelete(item.id)}>
                         <Text style={styles.deleteBtn}>Eliminar</Text>
                       </TouchableOpacity>
@@ -160,14 +181,12 @@ export default function CreditsScreen() {
         )}
       </View>
 
-      {showForm && (
-        <View style={styles.overlay} />
-      )}
+      {showForm && <View style={styles.overlay} />}
 
       <View style={[styles.drawer, showForm && styles.drawerOpen]}>
         <View style={styles.drawerHeader}>
           <View>
-            <Text style={styles.drawerTitle}>Nuevo crédito</Text>
+            <Text style={styles.drawerTitle}>{editingId ? 'Editar crédito' : 'Nuevo crédito'}</Text>
             <Text style={styles.drawerSub}>{MONTHS[selectedMonth]} {selectedYear}</Text>
           </View>
           <TouchableOpacity onPress={() => { setShowForm(false); resetForm() }}>
@@ -223,7 +242,7 @@ export default function CreditsScreen() {
             <Text style={styles.cancelButtonText}>Cancelar</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={saving}>
-            {saving ? <ActivityIndicator color={Colors.white} /> : <Text style={styles.saveButtonText}>Guardar crédito</Text>}
+            {saving ? <ActivityIndicator color={Colors.white} /> : <Text style={styles.saveButtonText}>{editingId ? 'Guardar cambios' : 'Guardar crédito'}</Text>}
           </TouchableOpacity>
         </View>
       </View>
@@ -254,28 +273,24 @@ const styles = StyleSheet.create({
   cellRut: { flex: 1.2 },
   cellCost: { flex: 1.2 },
   cellType: { width: 90 },
-  cellAction: { width: 80, alignItems: 'flex-end' },
+  cellAction: { width: 120, alignItems: 'flex-end', gap: 6 },
   badge: { borderRadius: 4, paddingHorizontal: 8, paddingVertical: 2, alignSelf: 'flex-start' },
   badgeCI: { backgroundColor: Colors.secondary },
   badgeCC: { backgroundColor: Colors.accent },
   badgeText: { color: Colors.white, fontSize: 11, fontWeight: '600' },
+  editBtn: { color: Colors.secondary, fontSize: 13 },
   deleteBtn: { color: Colors.danger, fontSize: 13 },
   empty: { alignItems: 'center', padding: 60 },
   emptyText: { color: Colors.textLight, fontSize: 15 },
   overlay: {
     position: 'fixed' as any, top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    zIndex: 100,
+    backgroundColor: 'rgba(0,0,0,0.3)', zIndex: 100,
   },
   drawer: {
     position: 'fixed' as any, top: 0, right: 0, bottom: 0,
-    width: 460,
-    backgroundColor: Colors.white,
-    shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    zIndex: 101,
-    transform: [{ translateX: 460 }],
+    width: 460, backgroundColor: Colors.white,
+    shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 20,
+    zIndex: 101, transform: [{ translateX: 460 }],
     transition: 'transform 0.3s ease',
   } as any,
   drawerOpen: { transform: [{ translateX: 0 }] },

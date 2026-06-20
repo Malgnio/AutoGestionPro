@@ -18,6 +18,7 @@ type Sale = {
 
 const PURCHASE_TYPES = ['R', 'F', 'FL'] as const
 const PURCHASE_TYPE_LABEL: Record<string, string> = { R: 'Retail', F: 'Flota', FL: 'Fleet' }
+const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
 
 export default function SalesScreen() {
   const now = new Date()
@@ -28,6 +29,7 @@ export default function SalesScreen() {
   const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [editingId, setEditingId] = useState<string | null>(null)
 
   const [customerName, setCustomerName] = useState('')
   const [rut, setRut] = useState('')
@@ -56,7 +58,19 @@ export default function SalesScreen() {
   }
 
   function resetForm() {
-    setCustomerName(''); setRut(''); setModel(''); setChassis(''); setOdv(''); setPurchaseType('R'); setError('')
+    setCustomerName(''); setRut(''); setModel(''); setChassis(''); setOdv(''); setPurchaseType('R'); setError(''); setEditingId(null)
+  }
+
+  function openEdit(item: Sale) {
+    setEditingId(item.id)
+    setCustomerName(item.customer_name)
+    setRut(item.rut)
+    setModel(item.model)
+    setChassis(item.chassis)
+    setOdv(item.odv)
+    setPurchaseType(item.purchase_type)
+    setError('')
+    setShowForm(true)
   }
 
   async function handleSave() {
@@ -72,15 +86,23 @@ export default function SalesScreen() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
-    const saleMonth = new Date(selectedYear, selectedMonth, 1).toISOString().split('T')[0]
+    const formattedRut = formatRut(rut)
 
-    const { error } = await supabase.from('sales').insert({
-      user_id: user.id, customer_name: customerName, rut: formatRut(rut), model, chassis, odv,
-      purchase_type: purchaseType, sale_month: saleMonth,
-    })
-
-    setSaving(false)
-    if (error) { setError(error.message) } else { setShowForm(false); resetForm(); loadSales() }
+    if (editingId) {
+      const { error } = await supabase.from('sales').update({
+        customer_name: customerName, rut: formattedRut, model, chassis, odv, purchase_type: purchaseType,
+      }).eq('id', editingId)
+      setSaving(false)
+      if (error) { setError(error.message) } else { setShowForm(false); resetForm(); loadSales() }
+    } else {
+      const saleMonth = new Date(selectedYear, selectedMonth, 1).toISOString().split('T')[0]
+      const { error } = await supabase.from('sales').insert({
+        user_id: user.id, customer_name: customerName, rut: formattedRut, model, chassis, odv,
+        purchase_type: purchaseType, sale_month: saleMonth,
+      })
+      setSaving(false)
+      if (error) { setError(error.message) } else { setShowForm(false); resetForm(); loadSales() }
+    }
   }
 
   async function handleDelete(id: string) {
@@ -89,14 +111,12 @@ export default function SalesScreen() {
     loadSales()
   }
 
-  const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
-
   return (
     <View style={styles.container}>
       <View style={styles.main}>
         <View style={styles.header}>
           <Text style={styles.pageTitle}>Ventas — {MONTHS[selectedMonth]} {selectedYear}</Text>
-          <TouchableOpacity style={styles.addButton} onPress={() => setShowForm(true)}>
+          <TouchableOpacity style={styles.addButton} onPress={() => { resetForm(); setShowForm(true) }}>
             <Text style={styles.addButtonText}>+ Nueva venta</Text>
           </TouchableOpacity>
         </View>
@@ -142,6 +162,9 @@ export default function SalesScreen() {
                       </View>
                     </View>
                     <View style={[styles.cell, styles.cellAction]}>
+                      <TouchableOpacity onPress={() => openEdit(item)} style={styles.editBtnWrap}>
+                        <Text style={styles.editBtn}>Editar</Text>
+                      </TouchableOpacity>
                       <TouchableOpacity onPress={() => handleDelete(item.id)}>
                         <Text style={styles.deleteBtn}>Eliminar</Text>
                       </TouchableOpacity>
@@ -154,14 +177,12 @@ export default function SalesScreen() {
         )}
       </View>
 
-      {showForm && (
-        <View style={styles.overlay} />
-      )}
+      {showForm && <View style={styles.overlay} />}
 
       <View style={[styles.drawer, showForm && styles.drawerOpen]}>
         <View style={styles.drawerHeader}>
           <View>
-            <Text style={styles.drawerTitle}>Nueva venta</Text>
+            <Text style={styles.drawerTitle}>{editingId ? 'Editar venta' : 'Nueva venta'}</Text>
             <Text style={styles.drawerSub}>{MONTHS[selectedMonth]} {selectedYear}</Text>
           </View>
           <TouchableOpacity onPress={() => { setShowForm(false); resetForm() }}>
@@ -223,7 +244,7 @@ export default function SalesScreen() {
             <Text style={styles.cancelButtonText}>Cancelar</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={saving}>
-            {saving ? <ActivityIndicator color={Colors.white} /> : <Text style={styles.saveButtonText}>Guardar venta</Text>}
+            {saving ? <ActivityIndicator color={Colors.white} /> : <Text style={styles.saveButtonText}>{editingId ? 'Guardar cambios' : 'Guardar venta'}</Text>}
           </TouchableOpacity>
         </View>
       </View>
@@ -253,26 +274,23 @@ const styles = StyleSheet.create({
   cellChassis: { flex: 2 },
   cellOdv: { flex: 1.2 },
   cellType: { width: 80 },
-  cellAction: { width: 80, alignItems: 'flex-end' },
+  cellAction: { width: 120, alignItems: 'flex-end', gap: 6 },
   badge: { backgroundColor: Colors.secondary, borderRadius: 4, paddingHorizontal: 8, paddingVertical: 2, alignSelf: 'flex-start' },
   badgeText: { color: Colors.white, fontSize: 11, fontWeight: '600' },
+  editBtnWrap: {},
+  editBtn: { color: Colors.secondary, fontSize: 13 },
   deleteBtn: { color: Colors.danger, fontSize: 13 },
   empty: { alignItems: 'center', padding: 60 },
   emptyText: { color: Colors.textLight, fontSize: 15 },
   overlay: {
     position: 'fixed' as any, top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    zIndex: 100,
+    backgroundColor: 'rgba(0,0,0,0.3)', zIndex: 100,
   },
   drawer: {
     position: 'fixed' as any, top: 0, right: 0, bottom: 0,
-    width: 460,
-    backgroundColor: Colors.white,
-    shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowRadius: 20,
-    zIndex: 101,
-    transform: [{ translateX: 460 }],
+    width: 460, backgroundColor: Colors.white,
+    shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 20,
+    zIndex: 101, transform: [{ translateX: 460 }],
     transition: 'transform 0.3s ease',
   } as any,
   drawerOpen: { transform: [{ translateX: 0 }] },
