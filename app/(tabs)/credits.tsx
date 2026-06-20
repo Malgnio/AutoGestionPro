@@ -47,7 +47,7 @@ export default function CreditsScreen() {
     const { data } = await supabase
       .from('credits').select('*').eq('user_id', user.id)
       .gte('sale_month', start).lte('sale_month', end)
-      .order('created_at', { ascending: false })
+      .order('created_at', { ascending: true })
 
     setCredits(data ?? [])
     setLoading(false)

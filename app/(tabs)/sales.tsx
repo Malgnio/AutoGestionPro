@@ -51,7 +51,7 @@ export default function SalesScreen() {
     const { data } = await supabase
       .from('sales').select('*').eq('user_id', user.id)
       .gte('sale_month', start).lte('sale_month', end)
-      .order('created_at', { ascending: false })
+      .order('created_at', { ascending: true })
 
     setSales(data ?? [])
     setLoading(false)
