@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Activi
 import { supabase } from '../../lib/supabase'
 import { Colors } from '../../constants/colors'
 import PeriodSelector from '../../components/PeriodSelector'
+import { validateRut, formatRut } from '../../lib/validateRut'
 
 type Credit = {
   id: string
@@ -61,6 +62,10 @@ export default function CreditsScreen() {
       setError('Completa todos los campos')
       return
     }
+    if (!validateRut(rut)) {
+      setError('El RUT ingresado no es válido')
+      return
+    }
     const cost = parseInt(dealerCost.replace(/\./g, '').replace(/,/g, ''))
     if (isNaN(cost) || cost <= 0) {
       setError('Ingresa un monto válido')
@@ -73,7 +78,7 @@ export default function CreditsScreen() {
     const saleMonth = new Date(selectedYear, selectedMonth, 1).toISOString().split('T')[0]
 
     const { error } = await supabase.from('credits').insert({
-      user_id: user.id, customer_name: customerName, rut,
+      user_id: user.id, customer_name: customerName, rut: formatRut(rut),
       dealer_cost: cost, credit_type: creditType, sale_month: saleMonth,
     })
 
@@ -177,7 +182,16 @@ export default function CreditsScreen() {
           <TextInput style={styles.input} value={customerName} onChangeText={setCustomerName} placeholderTextColor={Colors.textLight} placeholder="Nombre completo" />
 
           <Text style={styles.label}>RUT</Text>
-          <TextInput style={styles.input} value={rut} onChangeText={setRut} placeholderTextColor={Colors.textLight} placeholder="12.345.678-9" />
+          <TextInput
+            style={[styles.input, rut.length > 3 && !validateRut(rut) && styles.inputError]}
+            value={rut}
+            onChangeText={setRut}
+            placeholderTextColor={Colors.textLight}
+            placeholder="12.345.678-9"
+          />
+          {rut.length > 3 && !validateRut(rut) && (
+            <Text style={styles.fieldError}>RUT inválido</Text>
+          )}
 
           <Text style={styles.label}>C. Dealer (monto)</Text>
           <TextInput style={styles.input} value={dealerCost} onChangeText={setDealerCost} keyboardType="numeric" placeholderTextColor={Colors.textLight} placeholder="Ej: 1500000" />
@@ -271,6 +285,8 @@ const styles = StyleSheet.create({
   formError: { backgroundColor: '#FDECEA', color: Colors.danger, borderRadius: 8, padding: 12, marginBottom: 16, fontSize: 14 },
   label: { fontSize: 13, color: Colors.textLight, marginBottom: 6, marginTop: 14 },
   input: { borderWidth: 1, borderColor: Colors.border, borderRadius: 8, padding: 10, fontSize: 14, color: Colors.text, outlineStyle: 'none' } as any,
+  inputError: { borderColor: Colors.danger },
+  fieldError: { fontSize: 12, color: Colors.danger, marginTop: 4 },
   typeRow: { flexDirection: 'row', gap: 8, marginTop: 4 },
   typeBtn: { flex: 1, padding: 10, borderRadius: 6, borderWidth: 1, borderColor: Colors.border, alignItems: 'center' },
   typeBtnActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },

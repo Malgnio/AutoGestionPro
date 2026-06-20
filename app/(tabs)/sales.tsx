@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator, Animated } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native'
 import { supabase } from '../../lib/supabase'
 import { Colors } from '../../constants/colors'
+import PeriodSelector from '../../components/PeriodSelector'
+import { validateRut, formatRut } from '../../lib/validateRut'
 
 type Sale = {
   id: string
@@ -18,6 +20,9 @@ const PURCHASE_TYPES = ['R', 'F', 'FL'] as const
 const PURCHASE_TYPE_LABEL: Record<string, string> = { R: 'Retail', F: 'Flota', FL: 'Fleet' }
 
 export default function SalesScreen() {
+  const now = new Date()
+  const [selectedYear, setSelectedYear] = useState(now.getFullYear())
+  const [selectedMonth, setSelectedMonth] = useState(now.getMonth())
   const [sales, setSales] = useState<Sale[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -31,16 +36,15 @@ export default function SalesScreen() {
   const [odv, setOdv] = useState('')
   const [purchaseType, setPurchaseType] = useState<'R' | 'F' | 'FL'>('R')
 
-  useEffect(() => { loadSales() }, [])
+  useEffect(() => { loadSales() }, [selectedYear, selectedMonth])
 
   async function loadSales() {
     setLoading(true)
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
-    const now = new Date()
-    const start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
-    const end = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0]
+    const start = new Date(selectedYear, selectedMonth, 1).toISOString().split('T')[0]
+    const end = new Date(selectedYear, selectedMonth + 1, 0).toISOString().split('T')[0]
 
     const { data } = await supabase
       .from('sales').select('*').eq('user_id', user.id)
@@ -60,15 +64,18 @@ export default function SalesScreen() {
       setError('Completa todos los campos')
       return
     }
+    if (!validateRut(rut)) {
+      setError('El RUT ingresado no es válido')
+      return
+    }
     setSaving(true)
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
-    const now = new Date()
-    const saleMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0]
+    const saleMonth = new Date(selectedYear, selectedMonth, 1).toISOString().split('T')[0]
 
     const { error } = await supabase.from('sales').insert({
-      user_id: user.id, customer_name: customerName, rut, model, chassis, odv,
+      user_id: user.id, customer_name: customerName, rut: formatRut(rut), model, chassis, odv,
       purchase_type: purchaseType, sale_month: saleMonth,
     })
 
@@ -82,15 +89,24 @@ export default function SalesScreen() {
     loadSales()
   }
 
+  const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+
   return (
     <View style={styles.container}>
       <View style={styles.main}>
         <View style={styles.header}>
-          <Text style={styles.pageTitle}>Ventas del mes</Text>
+          <Text style={styles.pageTitle}>Ventas — {MONTHS[selectedMonth]} {selectedYear}</Text>
           <TouchableOpacity style={styles.addButton} onPress={() => setShowForm(true)}>
             <Text style={styles.addButtonText}>+ Nueva venta</Text>
           </TouchableOpacity>
         </View>
+
+        <PeriodSelector
+          selectedYear={selectedYear}
+          selectedMonth={selectedMonth}
+          onYearChange={setSelectedYear}
+          onMonthChange={setSelectedMonth}
+        />
 
         {loading ? (
           <ActivityIndicator color={Colors.primary} style={{ marginTop: 60 }} />
@@ -98,7 +114,7 @@ export default function SalesScreen() {
           <ScrollView style={styles.tableContainer}>
             {sales.length === 0 ? (
               <View style={styles.empty}>
-                <Text style={styles.emptyText}>No hay ventas registradas este mes</Text>
+                <Text style={styles.emptyText}>No hay ventas en {MONTHS[selectedMonth]} {selectedYear}</Text>
               </View>
             ) : (
               <View style={styles.table}>
@@ -138,15 +154,16 @@ export default function SalesScreen() {
         )}
       </View>
 
-      {/* Overlay oscuro */}
       {showForm && (
         <TouchableOpacity style={styles.overlay} onPress={() => { setShowForm(false); resetForm() }} activeOpacity={1} />
       )}
 
-      {/* Panel lateral derecho */}
       <View style={[styles.drawer, showForm && styles.drawerOpen]}>
         <View style={styles.drawerHeader}>
-          <Text style={styles.drawerTitle}>Nueva venta</Text>
+          <View>
+            <Text style={styles.drawerTitle}>Nueva venta</Text>
+            <Text style={styles.drawerSub}>{MONTHS[selectedMonth]} {selectedYear}</Text>
+          </View>
           <TouchableOpacity onPress={() => { setShowForm(false); resetForm() }}>
             <Text style={styles.closeBtn}>✕</Text>
           </TouchableOpacity>
@@ -159,7 +176,16 @@ export default function SalesScreen() {
           <TextInput style={styles.input} value={customerName} onChangeText={setCustomerName} placeholderTextColor={Colors.textLight} placeholder="Nombre completo" />
 
           <Text style={styles.label}>RUT</Text>
-          <TextInput style={styles.input} value={rut} onChangeText={setRut} placeholderTextColor={Colors.textLight} placeholder="12.345.678-9" />
+          <TextInput
+            style={[styles.input, rut.length > 3 && !validateRut(rut) && styles.inputError]}
+            value={rut}
+            onChangeText={setRut}
+            placeholderTextColor={Colors.textLight}
+            placeholder="12.345.678-9"
+          />
+          {rut.length > 3 && !validateRut(rut) && (
+            <Text style={styles.fieldError}>RUT inválido</Text>
+          )}
 
           <Text style={styles.label}>Modelo</Text>
           <TextInput style={styles.input} value={model} onChangeText={setModel} placeholderTextColor={Colors.textLight} placeholder="Ej: Grand i10" />
@@ -206,7 +232,7 @@ const styles = StyleSheet.create({
   pageTitle: { fontSize: 24, fontWeight: 'bold', color: Colors.text },
   addButton: { backgroundColor: Colors.primary, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8 },
   addButtonText: { color: Colors.white, fontWeight: 'bold', fontSize: 14 },
-  tableContainer: { flex: 1, paddingHorizontal: 32 },
+  tableContainer: { flex: 1, paddingHorizontal: 32, paddingTop: 20 },
   table: { backgroundColor: Colors.white, borderRadius: 12, overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 6, elevation: 2 },
   tableRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16 },
   tableHead: { backgroundColor: Colors.primary },
@@ -239,35 +265,25 @@ const styles = StyleSheet.create({
     shadowColor: '#000',
     shadowOpacity: 0.15,
     shadowRadius: 20,
-    elevation: 10,
     zIndex: 101,
     transform: [{ translateX: 460 }],
     transition: 'transform 0.3s ease',
   } as any,
-  drawerOpen: {
-    transform: [{ translateX: 0 }],
-  },
+  drawerOpen: { transform: [{ translateX: 0 }] },
   drawerHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 24,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start',
+    padding: 24, borderBottomWidth: 1, borderBottomColor: Colors.border,
   },
   drawerTitle: { fontSize: 18, fontWeight: 'bold', color: Colors.text },
+  drawerSub: { fontSize: 13, color: Colors.textLight, marginTop: 2 },
   closeBtn: { fontSize: 18, color: Colors.textLight, padding: 4 },
   drawerBody: { flex: 1, padding: 24 },
-  drawerFooter: {
-    flexDirection: 'row',
-    gap: 12,
-    padding: 24,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
-  },
+  drawerFooter: { flexDirection: 'row', gap: 12, padding: 24, borderTopWidth: 1, borderTopColor: Colors.border },
   formError: { backgroundColor: '#FDECEA', color: Colors.danger, borderRadius: 8, padding: 12, marginBottom: 16, fontSize: 14 },
   label: { fontSize: 13, color: Colors.textLight, marginBottom: 6, marginTop: 14 },
   input: { borderWidth: 1, borderColor: Colors.border, borderRadius: 8, padding: 10, fontSize: 14, color: Colors.text, outlineStyle: 'none' } as any,
+  inputError: { borderColor: Colors.danger },
+  fieldError: { fontSize: 12, color: Colors.danger, marginTop: 4 },
   typeRow: { flexDirection: 'row', gap: 8, marginTop: 4 },
   typeBtn: { flex: 1, padding: 10, borderRadius: 6, borderWidth: 1, borderColor: Colors.border, alignItems: 'center' },
   typeBtnActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
