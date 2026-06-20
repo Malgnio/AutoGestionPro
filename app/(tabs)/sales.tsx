@@ -153,7 +153,7 @@ export default function SalesScreen() {
                     <Text style={[styles.cell, styles.cellN]}>{index + 1}</Text>
                     <Text style={[styles.cell, styles.cellName]}>{item.customer_name}</Text>
                     <Text style={[styles.cell, styles.cellRut]}>{item.rut}</Text>
-                    <Text style={[styles.cell, styles.cellModel]}>{item.model}</Text>
+                    <Text style={[styles.cell, styles.cellModel]} numberOfLines={1}>{item.model}</Text>
                     <Text style={[styles.cell, styles.cellChassis]}>{item.chassis}</Text>
                     <Text style={[styles.cell, styles.cellOdv]}>{item.odv}</Text>
                     <View style={[styles.cell, styles.cellType]}>
