@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native'
 import { supabase } from '../../lib/supabase'
 import { Colors } from '../../constants/colors'
-import PeriodSelector from '../../components/PeriodSelector'
 
 const SALES_COMMISSION = [
   { min: 15, max: Infinity, rate: 0.12 },
@@ -11,7 +10,6 @@ const SALES_COMMISSION = [
   { min: 6, max: 8, rate: 0.08 },
   { min: 1, max: 5, rate: 0.06 },
 ]
-
 const CREDIT_COMMISSION = [
   { min: 9, max: Infinity, rate: 0.17 },
   { min: 8, max: 8, rate: 0.16 },
@@ -21,137 +19,184 @@ const CREDIT_COMMISSION = [
   { min: 1, max: 1, rate: 0.04 },
 ]
 
-const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+function getSalesRate(u: number) { return SALES_COMMISSION.find(r => u >= r.min && u <= r.max)?.rate ?? 0 }
+function getCreditRate(c: number) { return CREDIT_COMMISSION.find(r => c >= r.min && c <= r.max)?.rate ?? 0 }
 
-function getSalesRate(units: number) {
-  return SALES_COMMISSION.find(r => units >= r.min && units <= r.max)?.rate ?? 0
-}
+const MONTH_LABELS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
+const YEARS = [new Date().getFullYear() - 2, new Date().getFullYear() - 1, new Date().getFullYear()]
 
-function getCreditRate(count: number) {
-  return CREDIT_COMMISSION.find(r => count >= r.min && count <= r.max)?.rate ?? 0
+type MonthData = {
+  sales: number
+  credits: number
+  dealer: number
 }
 
 export default function DashboardScreen() {
-  const now = new Date()
-  const [selectedYear, setSelectedYear] = useState(now.getFullYear())
-  const [selectedMonth, setSelectedMonth] = useState(now.getMonth())
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
   const [loading, setLoading] = useState(true)
-  const [salesCount, setSalesCount] = useState(0)
-  const [creditsCount, setCreditsCount] = useState(0)
-  const [totalDealer, setTotalDealer] = useState(0)
+  const [monthData, setMonthData] = useState<MonthData[]>(Array(12).fill({ sales: 0, credits: 0, dealer: 0 }))
 
-  useEffect(() => { loadData() }, [selectedYear, selectedMonth])
+  useEffect(() => { loadData() }, [selectedYear])
 
   async function loadData() {
     setLoading(true)
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
-    const start = new Date(selectedYear, selectedMonth, 1).toISOString().split('T')[0]
-    const end = new Date(selectedYear, selectedMonth + 1, 0).toISOString().split('T')[0]
+    const start = `${selectedYear}-01-01`
+    const end = `${selectedYear}-12-31`
 
     const [{ data: sales }, { data: credits }] = await Promise.all([
-      supabase.from('sales').select('id').eq('user_id', user.id).gte('sale_month', start).lte('sale_month', end),
-      supabase.from('credits').select('dealer_cost').eq('user_id', user.id).gte('sale_month', start).lte('sale_month', end),
+      supabase.from('sales').select('sale_month').eq('user_id', user.id).gte('sale_month', start).lte('sale_month', end),
+      supabase.from('credits').select('sale_month, dealer_cost').eq('user_id', user.id).gte('sale_month', start).lte('sale_month', end),
     ])
 
-    setSalesCount(sales?.length ?? 0)
-    setCreditsCount(credits?.length ?? 0)
-    setTotalDealer(credits?.reduce((sum, c) => sum + Number(c.dealer_cost), 0) ?? 0)
+    const data: MonthData[] = Array.from({ length: 12 }, () => ({ sales: 0, credits: 0, dealer: 0 }))
+
+    sales?.forEach(s => {
+      const m = new Date(s.sale_month).getUTCMonth()
+      data[m].sales += 1
+    })
+    credits?.forEach(c => {
+      const m = new Date(c.sale_month).getUTCMonth()
+      data[m].credits += 1
+      data[m].dealer += Number(c.dealer_cost)
+    })
+
+    setMonthData(data)
     setLoading(false)
   }
 
-  const salesRate = getSalesRate(salesCount)
-  const creditRate = getCreditRate(creditsCount)
-  const dealerSinIva = totalDealer * 0.81
-  const creditCommission = dealerSinIva * creditRate
-  const penetration = salesCount > 0 ? Math.round((creditsCount / salesCount) * 100) : 0
+  const totalSales = monthData.reduce((s, m) => s + m.sales, 0)
+  const totalCredits = monthData.reduce((s, m) => s + m.credits, 0)
+  const totalDealer = monthData.reduce((s, m) => s + m.dealer, 0)
+  const penetration = totalSales > 0 ? Math.round((totalCredits / totalSales) * 100) : 0
+
+  // Comisión anual: suma de comisión por mes
+  const totalCommission = monthData.reduce((sum, m) => {
+    const rate = getCreditRate(m.credits)
+    return sum + m.dealer * 0.81 * rate
+  }, 0)
+
+  const maxSales = Math.max(...monthData.map(m => m.sales), 1)
+  const maxCredits = Math.max(...monthData.map(m => m.credits), 1)
+  const maxBar = Math.max(maxSales, maxCredits)
 
   return (
     <View style={styles.container}>
       <View style={styles.topBar}>
-        <Text style={styles.pageTitle}>Resumen — <Text style={styles.monthLabel}>{MONTHS[selectedMonth]} {selectedYear}</Text></Text>
+        <Text style={styles.pageTitle}>Resumen</Text>
+        <View style={styles.yearRow}>
+          {YEARS.map(y => (
+            <TouchableOpacity
+              key={y}
+              style={[styles.yearBtn, selectedYear === y && styles.yearBtnActive]}
+              onPress={() => setSelectedYear(y)}
+            >
+              <Text style={[styles.yearBtnText, selectedYear === y && styles.yearBtnTextActive]}>FY{y}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
 
-      <PeriodSelector
-        selectedYear={selectedYear}
-        selectedMonth={selectedMonth}
-        onYearChange={setSelectedYear}
-        onMonthChange={setSelectedMonth}
-      />
+      {loading ? (
+        <ActivityIndicator color={Colors.primary} style={{ marginTop: 60 }} />
+      ) : (
+        <ScrollView style={styles.scrollArea} contentContainerStyle={styles.content}>
 
-      <ScrollView style={styles.scrollArea} contentContainerStyle={styles.content}>
-        {loading ? (
-          <ActivityIndicator color={Colors.primary} style={{ marginTop: 60 }} />
-        ) : (
-          <>
-            <View style={styles.statsRow}>
-              <View style={[styles.statCard, { backgroundColor: Colors.secondary }]}>
-                <Text style={styles.statLabel}>Unidades vendidas</Text>
-                <Text style={styles.statValue}>{salesCount}</Text>
-                <Text style={styles.statSub}>Tasa: {(salesRate * 100).toFixed(0)}%</Text>
-              </View>
-              <View style={[styles.statCard, { backgroundColor: Colors.success }]}>
-                <Text style={styles.statLabel}>Créditos</Text>
-                <Text style={styles.statValue}>{creditsCount}</Text>
-                <Text style={styles.statSub}>Tasa: {(creditRate * 100).toFixed(0)}%</Text>
-              </View>
-              <View style={[styles.statCard, { backgroundColor: Colors.accent }]}>
-                <Text style={styles.statLabel}>Penetración crédito</Text>
-                <Text style={styles.statValue}>{penetration}%</Text>
-                <Text style={styles.statSub}>Meta: 50%</Text>
-              </View>
-              <View style={[styles.statCard, { backgroundColor: Colors.primary }]}>
-                <Text style={styles.statLabel}>Comisión a pagar</Text>
-                <Text style={styles.statValue}>${Math.round(creditCommission).toLocaleString('es-CL')}</Text>
-                <Text style={styles.statSub}>C.Dealer sin IVA × {(creditRate * 100).toFixed(0)}%</Text>
+          {/* KPIs anuales */}
+          <View style={styles.kpiRow}>
+            <View style={[styles.kpiCard, { backgroundColor: Colors.secondary }]}>
+              <Text style={styles.kpiLabel}>Unidades vendidas</Text>
+              <Text style={styles.kpiValue}>{totalSales}</Text>
+              <Text style={styles.kpiSub}>Tasa: {(getSalesRate(totalSales) * 100).toFixed(0)}%</Text>
+            </View>
+            <View style={[styles.kpiCard, { backgroundColor: Colors.success }]}>
+              <Text style={styles.kpiLabel}>Créditos</Text>
+              <Text style={styles.kpiValue}>{totalCredits}</Text>
+              <Text style={styles.kpiSub}>Tasa: {(getCreditRate(totalCredits) * 100).toFixed(0)}%</Text>
+            </View>
+            <View style={[styles.kpiCard, { backgroundColor: Colors.accent }]}>
+              <Text style={styles.kpiLabel}>Penetración crédito</Text>
+              <Text style={styles.kpiValue}>{penetration}%</Text>
+              <Text style={styles.kpiSub}>Meta: 50%</Text>
+            </View>
+            <View style={[styles.kpiCard, { backgroundColor: Colors.primary }]}>
+              <Text style={styles.kpiLabel}>Comisión anual</Text>
+              <Text style={styles.kpiValue}>${Math.round(totalCommission).toLocaleString('es-CL')}</Text>
+              <Text style={styles.kpiSub}>C.Dealer sin IVA × tasa</Text>
+            </View>
+          </View>
+
+          {/* Gráfico barras */}
+          <View style={styles.chartCard}>
+            <View style={styles.chartHeader}>
+              <Text style={styles.chartTitle}>Ventas y créditos por mes — {selectedYear}</Text>
+              <View style={styles.legend}>
+                <View style={styles.legendItem}>
+                  <View style={[styles.legendDot, { backgroundColor: Colors.secondary }]} />
+                  <Text style={styles.legendText}>Unidades</Text>
+                </View>
+                <View style={styles.legendItem}>
+                  <View style={[styles.legendDot, { backgroundColor: Colors.success }]} />
+                  <Text style={styles.legendText}>Créditos</Text>
+                </View>
               </View>
             </View>
 
-            <View style={styles.summaryCard}>
-              <Text style={styles.summaryTitle}>Detalle comisiones</Text>
-              <View style={styles.summaryGrid}>
-                <View style={styles.summaryItem}>
-                  <Text style={styles.summaryLabel}>Total C. Dealer</Text>
-                  <Text style={styles.summaryValue}>${totalDealer.toLocaleString('es-CL')}</Text>
+            <View style={styles.chart}>
+              {monthData.map((m, i) => (
+                <View key={i} style={styles.barGroup}>
+                  <View style={styles.bars}>
+                    <View style={styles.barWrapper}>
+                      <Text style={styles.barVal}>{m.sales > 0 ? m.sales : ''}</Text>
+                      <View style={[styles.bar, { height: Math.round((m.sales / maxBar) * 140), backgroundColor: Colors.secondary }]} />
+                    </View>
+                    <View style={styles.barWrapper}>
+                      <Text style={styles.barVal}>{m.credits > 0 ? m.credits : ''}</Text>
+                      <View style={[styles.bar, { height: Math.round((m.credits / maxBar) * 140), backgroundColor: Colors.success }]} />
+                    </View>
+                  </View>
+                  <Text style={styles.barLabel}>{MONTH_LABELS[i]}</Text>
                 </View>
-                <View style={styles.summaryItem}>
-                  <Text style={styles.summaryLabel}>C. Dealer sin IVA (−19%)</Text>
-                  <Text style={styles.summaryValue}>${Math.round(dealerSinIva).toLocaleString('es-CL')}</Text>
-                </View>
-                <View style={styles.summaryItem}>
-                  <Text style={styles.summaryLabel}>Tasa por créditos ({creditsCount} créditos)</Text>
-                  <Text style={styles.summaryValue}>{(creditRate * 100).toFixed(0)}%</Text>
-                </View>
-                <View style={styles.summaryItem}>
-                  <Text style={styles.summaryLabel}>Comisión a pagar</Text>
-                  <Text style={[styles.summaryValue, { color: Colors.success }]}>${Math.round(creditCommission).toLocaleString('es-CL')}</Text>
-                </View>
-              </View>
+              ))}
             </View>
-          </>
-        )}
-      </ScrollView>
+          </View>
+
+        </ScrollView>
+      )}
     </View>
   )
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  topBar: { padding: 32, paddingBottom: 16 },
+  topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 32, paddingBottom: 16 },
   pageTitle: { fontSize: 24, fontWeight: 'bold', color: Colors.text },
-  monthLabel: { color: Colors.textLight, fontWeight: 'normal' },
+  yearRow: { flexDirection: 'row', gap: 8 },
+  yearBtn: { paddingHorizontal: 16, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.white },
+  yearBtnActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
+  yearBtnText: { fontSize: 13, color: Colors.textLight },
+  yearBtnTextActive: { color: Colors.white, fontWeight: 'bold' },
   scrollArea: { flex: 1 },
   content: { padding: 32, gap: 24 },
-  statsRow: { flexDirection: 'row', gap: 16 },
-  statCard: { flex: 1, borderRadius: 12, padding: 24 },
-  statLabel: { fontSize: 13, color: 'rgba(255,255,255,0.8)', marginBottom: 12 },
-  statValue: { fontSize: 32, fontWeight: 'bold', color: '#fff', marginBottom: 6 },
-  statSub: { fontSize: 12, color: 'rgba(255,255,255,0.7)' },
-  summaryCard: { backgroundColor: Colors.white, borderRadius: 12, padding: 28, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 6, elevation: 2 },
-  summaryTitle: { fontSize: 16, fontWeight: 'bold', color: Colors.text, marginBottom: 20 },
-  summaryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 24 },
-  summaryItem: { minWidth: 200, flex: 1 },
-  summaryLabel: { fontSize: 13, color: Colors.textLight, marginBottom: 6 },
-  summaryValue: { fontSize: 20, fontWeight: 'bold', color: Colors.text },
+  kpiRow: { flexDirection: 'row', gap: 16 },
+  kpiCard: { flex: 1, borderRadius: 12, padding: 24 },
+  kpiLabel: { fontSize: 13, color: 'rgba(255,255,255,0.8)', marginBottom: 12 },
+  kpiValue: { fontSize: 32, fontWeight: 'bold', color: '#fff', marginBottom: 6 },
+  kpiSub: { fontSize: 12, color: 'rgba(255,255,255,0.7)' },
+  chartCard: { backgroundColor: Colors.white, borderRadius: 12, padding: 28, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 6, elevation: 2 },
+  chartHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
+  chartTitle: { fontSize: 15, fontWeight: 'bold', color: Colors.text },
+  legend: { flexDirection: 'row', gap: 16 },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  legendDot: { width: 10, height: 10, borderRadius: 5 },
+  legendText: { fontSize: 12, color: Colors.textLight },
+  chart: { flexDirection: 'row', alignItems: 'flex-end', height: 180, gap: 4 },
+  barGroup: { flex: 1, alignItems: 'center', gap: 4 },
+  bars: { flexDirection: 'row', alignItems: 'flex-end', gap: 2, height: 150 },
+  barWrapper: { alignItems: 'center', justifyContent: 'flex-end' },
+  bar: { width: 14, borderRadius: 3, minHeight: 2 },
+  barVal: { fontSize: 9, color: Colors.textLight, marginBottom: 2 },
+  barLabel: { fontSize: 10, color: Colors.textLight, textAlign: 'center' },
 })
