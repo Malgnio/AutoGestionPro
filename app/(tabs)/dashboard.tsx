@@ -63,7 +63,8 @@ export default function DashboardScreen() {
 
   const salesRate = getSalesRate(salesCount)
   const creditRate = getCreditRate(creditsCount)
-  const creditCommission = totalDealer * creditRate
+  const dealerSinIva = totalDealer * 0.81
+  const creditCommission = dealerSinIva * creditRate
   const penetration = salesCount > 0 ? Math.round((creditsCount / salesCount) * 100) : 0
 
   return (
@@ -101,9 +102,9 @@ export default function DashboardScreen() {
                 <Text style={styles.statSub}>Meta: 50%</Text>
               </View>
               <View style={[styles.statCard, { backgroundColor: Colors.primary }]}>
-                <Text style={styles.statLabel}>Comisión créditos</Text>
-                <Text style={styles.statValue}>${creditCommission.toLocaleString('es-CL')}</Text>
-                <Text style={styles.statSub}>Sin IVA</Text>
+                <Text style={styles.statLabel}>Comisión a pagar</Text>
+                <Text style={styles.statValue}>${Math.round(creditCommission).toLocaleString('es-CL')}</Text>
+                <Text style={styles.statSub}>C.Dealer sin IVA × {(creditRate * 100).toFixed(0)}%</Text>
               </View>
             </View>
 
@@ -115,16 +116,16 @@ export default function DashboardScreen() {
                   <Text style={styles.summaryValue}>${totalDealer.toLocaleString('es-CL')}</Text>
                 </View>
                 <View style={styles.summaryItem}>
+                  <Text style={styles.summaryLabel}>C. Dealer sin IVA (−19%)</Text>
+                  <Text style={styles.summaryValue}>${Math.round(dealerSinIva).toLocaleString('es-CL')}</Text>
+                </View>
+                <View style={styles.summaryItem}>
                   <Text style={styles.summaryLabel}>Tasa por créditos ({creditsCount} créditos)</Text>
                   <Text style={styles.summaryValue}>{(creditRate * 100).toFixed(0)}%</Text>
                 </View>
                 <View style={styles.summaryItem}>
-                  <Text style={styles.summaryLabel}>Comisión bruta</Text>
-                  <Text style={[styles.summaryValue, { color: Colors.success }]}>${creditCommission.toLocaleString('es-CL')}</Text>
-                </View>
-                <View style={styles.summaryItem}>
-                  <Text style={styles.summaryLabel}>Tasa por unidades ({salesCount} unidades)</Text>
-                  <Text style={styles.summaryValue}>{(salesRate * 100).toFixed(0)}%</Text>
+                  <Text style={styles.summaryLabel}>Comisión a pagar</Text>
+                  <Text style={[styles.summaryValue, { color: Colors.success }]}>${Math.round(creditCommission).toLocaleString('es-CL')}</Text>
                 </View>
               </View>
             </View>
