@@ -12,12 +12,12 @@ type Sale = {
   model: string
   chassis: string
   odv: string
-  purchase_type: 'R' | 'F' | 'FL'
+  purchase_type: 'R' | 'F' | 'FL' | 'SEG'
   sale_month: string
 }
 
-const PURCHASE_TYPES = ['R', 'F', 'FL'] as const
-const PURCHASE_TYPE_LABEL: Record<string, string> = { R: 'Retail', F: 'Flota', FL: 'Fleet' }
+const PURCHASE_TYPES = ['R', 'F', 'FL', 'SEG'] as const
+const PURCHASE_TYPE_LABEL: Record<string, string> = { R: 'Retail', F: 'Flota', FL: 'Fleet', SEG: 'Seguro' }
 const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
 
 export default function SalesScreen() {
@@ -36,7 +36,7 @@ export default function SalesScreen() {
   const [model, setModel] = useState('')
   const [chassis, setChassis] = useState('')
   const [odv, setOdv] = useState('')
-  const [purchaseType, setPurchaseType] = useState<'R' | 'F' | 'FL'>('R')
+  const [purchaseType, setPurchaseType] = useState<'R' | 'F' | 'FL' | 'SEG'>('R')
 
   useEffect(() => { loadSales() }, [selectedYear, selectedMonth])
 
