@@ -179,7 +179,13 @@ export default function CreditsScreen() {
           {error ? <Text style={styles.formError}>{error}</Text> : null}
 
           <Text style={styles.label}>Nombre cliente</Text>
-          <TextInput style={styles.input} value={customerName} onChangeText={setCustomerName} placeholderTextColor={Colors.textLight} placeholder="Nombre completo" />
+          <TextInput
+            style={styles.input}
+            value={customerName}
+            onChangeText={v => setCustomerName(v.replace(/\b\w/g, c => c.toUpperCase()).replace(/\B\w/g, c => c.toLowerCase()))}
+            placeholderTextColor={Colors.textLight}
+            placeholder="Nombre completo"
+          />
 
           <Text style={styles.label}>RUT</Text>
           <TextInput
