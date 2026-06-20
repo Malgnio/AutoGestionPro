@@ -10,7 +10,7 @@ type Credit = {
   customer_name: string
   rut: string
   dealer_cost: number
-  credit_type: 'CI' | 'CC'
+  credit_type: 'OI' | 'CC'
   sale_month: string
 }
 
@@ -19,8 +19,8 @@ type SaleOption = {
   rut: string
 }
 
-const CREDIT_TYPES = ['CI', 'CC'] as const
-const CREDIT_TYPE_LABEL: Record<string, string> = { CI: 'Crédito Interno', CC: 'Crédito Externo' }
+const CREDIT_TYPES = ['OI', 'CC'] as const
+const CREDIT_TYPE_LABEL: Record<string, string> = { OI: 'Crédito Interno', CC: 'Crédito Externo' }
 const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
 
 export default function CreditsScreen() {
@@ -39,7 +39,8 @@ export default function CreditsScreen() {
   const [customerName, setCustomerName] = useState('')
   const [rut, setRut] = useState('')
   const [dealerCost, setDealerCost] = useState('')
-  const [creditType, setCreditType] = useState<'CI' | 'CC'>('CI')
+  const [creditType, setCreditType] = useState<'OI' | 'CC'>('OI')
+
 
   useEffect(() => { loadCredits() }, [selectedYear, selectedMonth])
   useEffect(() => { loadSalesOptions() }, [selectedYear, selectedMonth])
@@ -77,7 +78,7 @@ export default function CreditsScreen() {
   }
 
   function resetForm() {
-    setCustomerName(''); setRut(''); setDealerCost(''); setCreditType('CI'); setError(''); setEditingId(null); setShowDropdown(false)
+    setCustomerName(''); setRut(''); setDealerCost(''); setCreditType('OI'); setError(''); setEditingId(null); setShowDropdown(false)
   }
 
   function selectSale(sale: SaleOption) {
@@ -195,7 +196,7 @@ export default function CreditsScreen() {
                     <Text style={[styles.cell, styles.cellRut]}>{item.rut}</Text>
                     <Text style={[styles.cell, styles.cellCost]}>${Number(item.dealer_cost).toLocaleString('es-CL')}</Text>
                     <View style={[styles.cell, styles.cellType]}>
-                      <View style={[styles.badge, item.credit_type === 'CI' ? styles.badgeCI : styles.badgeCC]}>
+                      <View style={[styles.badge, item.credit_type === 'OI' ? styles.badgeCI : styles.badgeCC]}>
                         <Text style={styles.badgeText}>{item.credit_type}</Text>
                       </View>
                     </View>
