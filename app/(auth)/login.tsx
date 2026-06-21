@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native'
 import { supabase } from '../../lib/supabase'
 import { Colors } from '../../constants/colors'
@@ -8,17 +8,72 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [isInvite, setIsInvite] = useState(false)
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [success, setSuccess] = useState('')
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const hash = window.location.hash
+    if (hash.includes('type=invite') || hash.includes('type=recovery')) {
+      setIsInvite(true)
+      // Supabase parsea automáticamente el token del hash
+      supabase.auth.getSession()
+    }
+  }, [])
 
   async function handleLogin() {
-    if (!email || !password) {
-      setError('Ingresa tu email y contraseña')
-      return
-    }
-    setError('')
-    setLoading(true)
+    if (!email || !password) { setError('Ingresa tu email y contraseña'); return }
+    setError(''); setLoading(true)
     const { error } = await supabase.auth.signInWithPassword({ email, password })
     setLoading(false)
-    if (error) setError(error.message)
+    if (error) setError('Credenciales incorrectas')
+  }
+
+  async function handleSetPassword() {
+    if (!newPassword || !confirmPassword) { setError('Completa ambos campos'); return }
+    if (newPassword.length < 6) { setError('La contraseña debe tener al menos 6 caracteres'); return }
+    if (newPassword !== confirmPassword) { setError('Las contraseñas no coinciden'); return }
+    setError(''); setLoading(true)
+    const { error } = await supabase.auth.updateUser({ password: newPassword })
+    setLoading(false)
+    if (error) { setError('Error al establecer contraseña: ' + error.message) }
+    else { setSuccess('¡Contraseña creada! Redirigiendo...') }
+  }
+
+  if (isInvite) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.card}>
+          <Text style={styles.title}>AutoGestión Pro</Text>
+          <Text style={styles.subtitle}>Crea tu contraseña de acceso</Text>
+
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+          {success ? <Text style={styles.successMsg}>{success}</Text> : null}
+
+          <TextInput
+            style={styles.input}
+            placeholder="Nueva contraseña"
+            placeholderTextColor={Colors.textLight}
+            value={newPassword}
+            onChangeText={setNewPassword}
+            secureTextEntry
+          />
+          <TextInput
+            style={styles.input}
+            placeholder="Confirmar contraseña"
+            placeholderTextColor={Colors.textLight}
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            secureTextEntry
+          />
+          <TouchableOpacity style={styles.button} onPress={handleSetPassword} disabled={loading}>
+            {loading ? <ActivityIndicator color={Colors.white} /> : <Text style={styles.buttonText}>Crear contraseña</Text>}
+          </TouchableOpacity>
+        </View>
+      </View>
+    )
   }
 
   return (
@@ -48,10 +103,7 @@ export default function LoginScreen() {
         />
 
         <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
-          {loading
-            ? <ActivityIndicator color={Colors.white} />
-            : <Text style={styles.buttonText}>Ingresar</Text>
-          }
+          {loading ? <ActivityIndicator color={Colors.white} /> : <Text style={styles.buttonText}>Ingresar</Text>}
         </TouchableOpacity>
       </View>
     </View>
@@ -117,5 +169,14 @@ const styles = StyleSheet.create({
     color: Colors.white,
     fontSize: 15,
     fontWeight: 'bold',
+  },
+  successMsg: {
+    backgroundColor: '#E8F8EF',
+    color: '#1E8449',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+    fontSize: 14,
+    textAlign: 'center',
   },
 })
