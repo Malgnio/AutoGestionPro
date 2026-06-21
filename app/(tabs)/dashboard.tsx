@@ -107,12 +107,12 @@ export default function DashboardScreen() {
             <View style={[styles.kpiCard, { backgroundColor: Colors.secondary }]}>
               <Text style={styles.kpiLabel}>Unidades vendidas</Text>
               <Text style={styles.kpiValue}>{totalSales}</Text>
-              <Text style={styles.kpiSub}>Tasa: {(getSalesRate(totalSales) * 100).toFixed(0)}%</Text>
+              <Text style={styles.kpiSub}>${(totalSales * 70000).toLocaleString('es-CL')} comisión</Text>
             </View>
             <View style={[styles.kpiCard, { backgroundColor: Colors.success }]}>
               <Text style={styles.kpiLabel}>Créditos</Text>
               <Text style={styles.kpiValue}>{totalCredits}</Text>
-              <Text style={styles.kpiSub}>en el año</Text>
+              <Text style={styles.kpiSub}>${Math.round(totalCreditCommission).toLocaleString('es-CL')} comisión</Text>
             </View>
             <View style={[styles.kpiCard, { backgroundColor: Colors.accent }]}>
               <Text style={styles.kpiLabel}>Penetración crédito</Text>
