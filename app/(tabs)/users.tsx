@@ -29,11 +29,8 @@ export default function UsersScreen() {
 
   async function loadUsers() {
     setLoading(true)
-    const { data } = await supabase
-      .from('profiles_with_email')
-      .select('id, full_name, role, created_at, email')
-      .order('created_at', { ascending: false })
-    setUsers(data ?? [])
+    const { data } = await supabase.rpc('get_profiles_with_email')
+    setUsers((data ?? []).sort((a: Profile, b: Profile) => b.created_at.localeCompare(a.created_at)))
     setLoading(false)
   }
 
