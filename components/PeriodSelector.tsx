@@ -23,7 +23,7 @@ export default function PeriodSelector({ selectedYear, selectedMonth, onYearChan
             onPress={() => onYearChange(year)}
           >
             <Text style={[styles.yearText, selectedYear === year && styles.yearTextActive]}>
-              FY{year}
+              {year}
             </Text>
           </TouchableOpacity>
         ))}
