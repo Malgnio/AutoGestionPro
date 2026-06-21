@@ -111,8 +111,8 @@ export default function MPPScreen() {
           <View style={styles.kpiRow}>
             <View style={[styles.kpiCard, { backgroundColor: '#2471A3' }]}>
               <Text style={styles.kpiLabel}>MPP del mes</Text>
-              <Text style={styles.kpiValue}>{mppList.length}</Text>
-              <Text style={styles.kpiSub}>mantenciones prepagadas</Text>
+              <Text style={[styles.kpiValue, { fontSize: 24 }]}>${totalCommission.toLocaleString('es-CL')}</Text>
+              <Text style={styles.kpiSub}>{mppList.length} mantenciones prepagadas</Text>
             </View>
             <View style={styles.kpiCard}>
               <Text style={[styles.kpiLabel, { color: Colors.textLight }]}>Comisión a pagar</Text>
