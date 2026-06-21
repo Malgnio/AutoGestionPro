@@ -8,6 +8,7 @@ const NAV_ITEMS = [
   { label: 'Resumen', icon: '📊', path: '/(tabs)/dashboard' },
   { label: 'Ventas', icon: '🚗', path: '/(tabs)/sales' },
   { label: 'Créditos', icon: '💳', path: '/(tabs)/credits' },
+  { label: 'Seguros', icon: '🛡️', path: '/(tabs)/insurance' },
   { label: 'Comisiones', icon: '💰', path: '/(tabs)/commissions' },
   { label: 'Usuarios', icon: '👥', path: '/(tabs)/users', adminOnly: true },
 ]
