@@ -42,19 +42,9 @@ export default function TabsLayout() {
         {!collapsed && (
           <View style={styles.sidebarTop}>
             <View style={styles.logoRow}>
-              <View
-                // @ts-ignore
-                dangerouslySetInnerHTML={{ __html: `<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <circle cx="16" cy="16" r="14" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/>
-                  <path d="M6.5 22 A11 11 0 0 1 25.5 22" stroke="rgba(255,255,255,0.5)" stroke-width="2" stroke-linecap="round" fill="none"/>
-                  <path d="M8 22 A9 9 0 0 1 14 13" stroke="#4ADE80" stroke-width="2.5" stroke-linecap="round" fill="none"/>
-                  <path d="M14 13 A9 9 0 0 1 24 22" stroke="rgba(255,255,255,0.3)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
-                  <line x1="16" y1="22" x2="12" y2="14" stroke="white" stroke-width="2" stroke-linecap="round"/>
-                  <circle cx="16" cy="22" r="2.5" fill="white"/>
-                  <line x1="9" y1="20" x2="10.5" y2="20" stroke="rgba(255,255,255,0.5)" stroke-width="1.2" stroke-linecap="round"/>
-                  <line x1="22.5" y1="20" x2="24" y2="20" stroke="rgba(255,255,255,0.5)" stroke-width="1.2" stroke-linecap="round"/>
-                  <line x1="16" y1="12" x2="16" y2="13.5" stroke="rgba(255,255,255,0.5)" stroke-width="1.2" stroke-linecap="round"/>
-                </svg>` }}
+                {/* @ts-ignore */}
+              <img
+                src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICA8Y2lyY2xlIGN4PSIxNiIgY3k9IjE2IiByPSIxNCIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMykiIHN0cm9rZS13aWR0aD0iMS41Ii8+CiAgPHBhdGggZD0iTTYuNSAyMiBBMTEgMTEgMCAwIDEgMjUuNSAyMiIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuNCkiIHN0cm9rZS13aWR0aD0iMi41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIGZpbGw9Im5vbmUiLz4KICA8cGF0aCBkPSJNNi41IDIyIEE5IDkgMCAwIDEgMTQgMTMuNSIgc3Ryb2tlPSIjNEFERTgwIiBzdHJva2Utd2lkdGg9IjIuNSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBmaWxsPSJub25lIi8+CiAgPGxpbmUgeDE9IjE2IiB5MT0iMjIiIHgyPSIxMiIgeTI9IjE0IiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgogIDxjaXJjbGUgY3g9IjE2IiBjeT0iMjIiIHI9IjIuNSIgZmlsbD0id2hpdGUiLz4KICA8bGluZSB4MT0iOS41IiB5MT0iMTkuNSIgeDI9IjExIiB5Mj0iMTkuNSIgc3Ryb2tlPSJyZ2JhKDI1NSwyNTUsMjU1LDAuNSkiIHN0cm9rZS13aWR0aD0iMS4yIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICA8bGluZSB4MT0iMjEiIHkxPSIxOS41IiB4Mj0iMjIuNSIgeTI9IjE5LjUiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjUpIiBzdHJva2Utd2lkdGg9IjEuMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CiAgPGxpbmUgeDE9IjE2IiB5MT0iMTIiIHgyPSIxNiIgeTI9IjEzLjUiIHN0cm9rZT0icmdiYSgyNTUsMjU1LDI1NSwwLjUpIiBzdHJva2Utd2lkdGg9IjEuMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+Cjwvc3ZnPg=="
                 style={{ width: 32, height: 32 } as any}
               />
               <Text style={styles.appName}>AutoGestión Pro</Text>
