@@ -75,7 +75,7 @@ export default function DashboardScreen() {
   // Comisión anual: suma de comisión por mes
   const totalCommission = monthData.reduce((sum, m) => {
     const rate = getCreditRate(m.credits)
-    return sum + m.dealer * 0.81 * rate
+    return sum + m.dealer / 1.19 * rate
   }, 0)
 
   const [hoveredMonth, setHoveredMonth] = useState<number | null>(null)
@@ -150,7 +150,7 @@ export default function DashboardScreen() {
               {monthData.map((m, i) => {
                 const isHovered = hoveredMonth === i
                 const rate = getCreditRate(m.credits)
-                const comision = Math.round(m.dealer * 0.81 * rate)
+                const comision = Math.round(m.dealer / 1.19 * rate)
                 const penetracion = m.sales > 0 ? Math.round((m.credits / m.sales) * 100) : 0
                 return (
                   <View

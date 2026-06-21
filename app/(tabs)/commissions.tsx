@@ -56,7 +56,7 @@ export default function CommissionsScreen() {
 
   const salesRate = getSalesRate(salesCount)
   const creditRate = getCreditRate(creditsCount)
-  const dealerSinIva = totalDealer * 0.81
+  const dealerSinIva = totalDealer / 1.19
   const creditCommission = dealerSinIva * creditRate
 
   return (

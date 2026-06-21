@@ -179,7 +179,7 @@ export default function CreditsScreen() {
 
         {!loading && (() => {
           const rate = getCreditRate(credits.length)
-          const sinIva = total * 0.81
+          const sinIva = total / 1.19
           const comision = sinIva * rate
           return (
             <View style={styles.kpiRow}>
