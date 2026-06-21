@@ -312,7 +312,7 @@ export default function CommissionsScreen() {
               {/* Total */}
               <View style={styles.divider} />
               <View style={styles.totalRow}>
-                <Text style={styles.totalLabel}>Total a recibir</Text>
+                <Text style={styles.totalLabel}>Sueldo Estimado</Text>
                 <Text style={styles.totalValue}>${Math.round(grandTotal).toLocaleString('es-CL')}</Text>
               </View>
             </View>
