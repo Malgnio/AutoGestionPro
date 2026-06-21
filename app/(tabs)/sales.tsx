@@ -159,10 +159,12 @@ export default function SalesScreen() {
                 <Text style={[styles.kpiValue, { color: Colors.text }]}>{creditsCount}</Text>
                 <Text style={[styles.kpiSub, { color: Colors.textLight }]}>del mes</Text>
               </View>
-              <View style={styles.kpiCard}>
-                <Text style={[styles.kpiLabel, { color: Colors.textLight }]}>Penetración</Text>
-                <Text style={[styles.kpiValue, { color: Colors.text }]}>{penetration}%</Text>
-                <Text style={[styles.kpiSub, { color: Colors.textLight }]}>Meta: 50%</Text>
+              <View style={[styles.kpiCard, {
+                backgroundColor: penetration >= 70 ? Colors.success : penetration >= 50 ? Colors.accent : '#C0392B'
+              }]}>
+                <Text style={styles.kpiLabel}>Penetración</Text>
+                <Text style={styles.kpiValue}>{penetration}%</Text>
+                <Text style={styles.kpiSub}>Meta: 70%</Text>
               </View>
             </View>
           )
