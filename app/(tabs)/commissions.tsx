@@ -134,7 +134,7 @@ export default function CommissionsScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.pageTitle}>Comisiones {selectedYear}</Text>
+        <Text style={styles.pageTitle}>Sueldo {selectedYear}</Text>
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.monthScroll} contentContainerStyle={styles.monthContainer}>

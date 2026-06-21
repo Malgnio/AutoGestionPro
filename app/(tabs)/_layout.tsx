@@ -11,7 +11,7 @@ const NAV_ITEMS = [
   { label: 'Seguros', icon: '🛡️', path: '/(tabs)/insurance' },
   { label: 'VPP', icon: '🔄', path: '/(tabs)/vpp' },
   { label: 'MPP', icon: '🔧', path: '/(tabs)/mpp' },
-  { label: 'Comisiones', icon: '💰', path: '/(tabs)/commissions' },
+  { label: 'Sueldo', icon: '💰', path: '/(tabs)/commissions' },
   { label: 'Usuarios', icon: '👥', path: '/(tabs)/users', adminOnly: true },
 ]
 
