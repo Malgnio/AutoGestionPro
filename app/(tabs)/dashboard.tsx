@@ -80,17 +80,8 @@ export default function DashboardScreen() {
   const totalVppCommission = totalVpp * VPP_COMMISSION
   const totalCommission = totalCreditCommission + totalVppCommission + totalMppCommission
 
-  // Para la línea de comisión en el gráfico
-  const monthlyCommission = monthData.map(m => {
-    const credit = m.dealer / 1.19 * getCreditRate(m.credits)
-    const vppC = m.vpp * VPP_COMMISSION
-    return credit + vppC + m.mppCommission
-  })
-  const maxCommission = Math.max(...monthlyCommission, 1)
-  const maxBar = Math.max(...monthData.map(m => Math.max(m.sales, m.credits)), 1)
-
+  const maxBar = Math.max(...monthData.map(m => Math.max(m.sales, m.credits, m.vpp, m.mppCount)), 1)
   const BAR_HEIGHT = 140
-  const LINE_HEIGHT = 150
 
   return (
     <View style={styles.container}>
@@ -165,10 +156,6 @@ export default function DashboardScreen() {
                   <View style={[styles.legendDot, { backgroundColor: '#2471A3' }]} />
                   <Text style={styles.legendText}>MPP</Text>
                 </View>
-                <View style={styles.legendItem}>
-                  <View style={[styles.legendLine, { backgroundColor: Colors.accent }]} />
-                  <Text style={styles.legendText}>Comisión total</Text>
-                </View>
               </View>
             </View>
 
@@ -239,20 +226,6 @@ export default function DashboardScreen() {
                 })}
               </View>
 
-              {/* Línea de comisión superpuesta */}
-              <View style={styles.lineOverlay} pointerEvents="none">
-                <View style={{ flexDirection: 'row', alignItems: 'flex-end', height: LINE_HEIGHT, paddingHorizontal: 0 }}>
-                  {monthlyCommission.map((val, i) => {
-                    const nextVal = monthlyCommission[i + 1]
-                    const dotY = LINE_HEIGHT - Math.round((val / maxCommission) * (LINE_HEIGHT - 16)) - 8
-                    return (
-                      <View key={i} style={{ flex: 1, height: LINE_HEIGHT, alignItems: 'center', justifyContent: 'flex-end' }}>
-                        <View style={[styles.lineDot, { position: 'absolute', bottom: Math.round((val / maxCommission) * (LINE_HEIGHT - 16)) }]} />
-                      </View>
-                    )
-                  })}
-                </View>
-              </View>
             </View>
           </View>
 
