@@ -33,7 +33,7 @@ function getCreditRate(count: number) {
 }
 
 const CREDIT_TYPES = ['OI', 'CC'] as const
-const CREDIT_TYPE_LABEL: Record<string, string> = { OI: 'Crédito Interno', CC: 'Crédito Externo' }
+const CREDIT_TYPE_LABEL: Record<string, string> = { OI: 'Crédito Inteligente', CC: 'Crédito Convencional' }
 const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
 
 export default function CreditsScreen() {
