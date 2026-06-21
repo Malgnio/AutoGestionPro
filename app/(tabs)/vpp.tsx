@@ -15,6 +15,7 @@ type VPP = {
 }
 
 const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+const COMMISSION_PER_VPP = 70000
 
 export default function VPPScreen() {
   const now = new Date()
@@ -107,6 +108,11 @@ export default function VPPScreen() {
               <Text style={styles.kpiLabel}>VPP del mes</Text>
               <Text style={styles.kpiValue}>{vppList.length}</Text>
               <Text style={styles.kpiSub}>vehículos en parte de pago</Text>
+            </View>
+            <View style={styles.kpiCard}>
+              <Text style={[styles.kpiLabel, { color: Colors.textLight }]}>Comisión a pagar</Text>
+              <Text style={[styles.kpiValue, { color: Colors.success, fontSize: 24 }]}>${(vppList.length * COMMISSION_PER_VPP).toLocaleString('es-CL')}</Text>
+              <Text style={[styles.kpiSub, { color: Colors.textLight }]}>{vppList.length} × $70.000</Text>
             </View>
           </View>
         )}
