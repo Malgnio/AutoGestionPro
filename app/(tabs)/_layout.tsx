@@ -41,7 +41,24 @@ export default function TabsLayout() {
       <View style={[styles.sidebar, collapsed && styles.sidebarCollapsed]}>
         {!collapsed && (
           <View style={styles.sidebarTop}>
-            <Text style={styles.appName}>AutoGestión Pro</Text>
+            <View style={styles.logoRow}>
+              <View
+                // @ts-ignore
+                dangerouslySetInnerHTML={{ __html: `<svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <circle cx="16" cy="16" r="14" stroke="rgba(255,255,255,0.3)" stroke-width="1.5"/>
+                  <path d="M6.5 22 A11 11 0 0 1 25.5 22" stroke="rgba(255,255,255,0.5)" stroke-width="2" stroke-linecap="round" fill="none"/>
+                  <path d="M8 22 A9 9 0 0 1 14 13" stroke="#4ADE80" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+                  <path d="M14 13 A9 9 0 0 1 24 22" stroke="rgba(255,255,255,0.3)" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+                  <line x1="16" y1="22" x2="12" y2="14" stroke="white" stroke-width="2" stroke-linecap="round"/>
+                  <circle cx="16" cy="22" r="2.5" fill="white"/>
+                  <line x1="9" y1="20" x2="10.5" y2="20" stroke="rgba(255,255,255,0.5)" stroke-width="1.2" stroke-linecap="round"/>
+                  <line x1="22.5" y1="20" x2="24" y2="20" stroke="rgba(255,255,255,0.5)" stroke-width="1.2" stroke-linecap="round"/>
+                  <line x1="16" y1="12" x2="16" y2="13.5" stroke="rgba(255,255,255,0.5)" stroke-width="1.2" stroke-linecap="round"/>
+                </svg>` }}
+                style={{ width: 32, height: 32 } as any}
+              />
+              <Text style={styles.appName}>AutoGestión Pro</Text>
+            </View>
             <Text style={styles.userName}>{userName}</Text>
           </View>
         )}
@@ -119,11 +136,16 @@ const styles = StyleSheet.create({
   sidebarTop: {
     marginBottom: 40,
   },
+  logoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 6,
+  },
   appName: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
     color: Colors.white,
-    marginBottom: 6,
   },
   userName: {
     fontSize: 13,
