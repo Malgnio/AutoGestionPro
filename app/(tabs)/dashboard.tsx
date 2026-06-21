@@ -129,11 +129,6 @@ export default function DashboardScreen() {
               <Text style={styles.kpiValue}>{totalMppCount}</Text>
               <Text style={styles.kpiSub}>${totalMppCommission.toLocaleString('es-CL')} comisión</Text>
             </View>
-            <View style={[styles.kpiCard, { backgroundColor: '#1A252F' }]}>
-              <Text style={styles.kpiLabel}>Comisión anual</Text>
-              <Text style={[styles.kpiValue, { fontSize: 22 }]}>${Math.round(totalCommission).toLocaleString('es-CL')}</Text>
-              <Text style={styles.kpiSub}>Créditos + VPP + MPP</Text>
-            </View>
           </View>
 
           {/* Gráfico */}
