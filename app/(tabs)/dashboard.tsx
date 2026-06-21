@@ -114,10 +114,10 @@ export default function DashboardScreen() {
               <Text style={styles.kpiValue}>{totalCredits}</Text>
               <Text style={styles.kpiSub}>${Math.round(totalCreditCommission).toLocaleString('es-CL')} comisión</Text>
             </View>
-            <View style={[styles.kpiCard, { backgroundColor: Colors.accent }]}>
+            <View style={[styles.kpiCard, { backgroundColor: penetration >= 70 ? Colors.success : penetration >= 50 ? Colors.accent : '#C0392B' }]}>
               <Text style={styles.kpiLabel}>Penetración crédito</Text>
               <Text style={styles.kpiValue}>{penetration}%</Text>
-              <Text style={styles.kpiSub}>Meta: 50%</Text>
+              <Text style={styles.kpiSub}>Meta: 70%</Text>
             </View>
             <View style={[styles.kpiCard, { backgroundColor: Colors.primary }]}>
               <Text style={styles.kpiLabel}>VPP en el año</Text>
