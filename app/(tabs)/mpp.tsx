@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Activi
 import { supabase } from '../../lib/supabase'
 import { Colors } from '../../constants/colors'
 import PeriodSelector from '../../components/PeriodSelector'
+import ClientSearch from '../../components/ClientSearch'
 import { validateRut, formatRut } from '../../lib/validateRut'
 
 type MPP = {
@@ -183,20 +184,15 @@ export default function MPPScreen() {
           {error ? <Text style={styles.formError}>{error}</Text> : null}
 
           <Text style={styles.label}>Nombre Cliente *</Text>
-          <TextInput
-            style={styles.input} value={clientName}
-            onChangeText={v => setClientName(v.replace(/\b\w/g, c => c.toUpperCase()).replace(/\B\w/g, c => c.toLowerCase()))}
-            placeholder="Nombre Apellido" placeholderTextColor={Colors.textLight}
+          <ClientSearch
+            value={clientName}
+            rut={rut}
+            selectedYear={selectedYear}
+            selectedMonth={selectedMonth}
+            onChangeName={v => { setClientName(v); setRut('') }}
+            onSelect={s => { setClientName(s.customer_name); setRut(s.rut); setChassis(s.chassis ?? '') }}
+            includesChassis
           />
-
-          <Text style={styles.label}>RUT *</Text>
-          <TextInput
-            style={[styles.input, rut.length > 3 && !validateRut(rut) && styles.inputError]}
-            value={rut} onChangeText={v => setRut(formatRut(v))}
-            placeholder="12.345.678-9" placeholderTextColor={Colors.textLight}
-            autoCapitalize="none"
-          />
-          {rut.length > 3 && !validateRut(rut) && <Text style={styles.fieldError}>RUT inválido</Text>}
 
           <Text style={styles.label}>Chasis</Text>
           <TextInput

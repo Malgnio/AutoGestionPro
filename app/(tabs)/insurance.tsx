@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Activi
 import { supabase } from '../../lib/supabase'
 import { Colors } from '../../constants/colors'
 import PeriodSelector from '../../components/PeriodSelector'
+import ClientSearch from '../../components/ClientSearch'
 import { validateRut, formatRut } from '../../lib/validateRut'
 
 type Insurance = {
@@ -208,23 +209,15 @@ export default function InsuranceScreen() {
           {error ? <Text style={styles.formError}>{error}</Text> : null}
 
           <Text style={styles.label}>Nombre cliente</Text>
-          <TextInput
-            style={styles.input}
+          <ClientSearch
             value={customerName}
-            onChangeText={v => setCustomerName(v.replace(/\b\w/g, c => c.toUpperCase()).replace(/\B\w/g, c => c.toLowerCase()))}
-            placeholder="Nombre completo"
-            placeholderTextColor={Colors.textLight}
+            rut={rut}
+            selectedYear={selectedYear}
+            selectedMonth={selectedMonth}
+            onChangeName={v => { setCustomerName(v); setRut('') }}
+            onSelect={s => { setCustomerName(s.customer_name); setRut(s.rut); setChassis(s.chassis ?? '') }}
+            includesChassis
           />
-
-          <Text style={styles.label}>RUT</Text>
-          <TextInput
-            style={[styles.input, rut.length > 3 && !validateRut(rut) && styles.inputError]}
-            value={rut}
-            onChangeText={setRut}
-            placeholder="12.345.678-9"
-            placeholderTextColor={Colors.textLight}
-          />
-          {rut.length > 3 && !validateRut(rut) && <Text style={styles.fieldError}>RUT inválido</Text>}
 
           <Text style={styles.label}>Chasis</Text>
           <TextInput
