@@ -74,6 +74,7 @@ export default function DashboardScreen() {
   const totalCredits = monthData.reduce((s, m) => s + m.credits, 0)
   const totalVpp = monthData.reduce((s, m) => s + m.vpp, 0)
   const totalMppCommission = monthData.reduce((s, m) => s + m.mppCommission, 0)
+  const totalMppCount = monthData.reduce((s, m) => s + m.mppCount, 0)
   const penetration = totalSales > 0 ? Math.round((totalCredits / totalSales) * 100) : 0
 
   const totalCreditCommission = monthData.reduce((sum, m) => sum + m.dealer / 1.19 * getCreditRate(m.credits), 0)
@@ -125,8 +126,8 @@ export default function DashboardScreen() {
             </View>
             <View style={[styles.kpiCard, { backgroundColor: '#2471A3' }]}>
               <Text style={styles.kpiLabel}>MPP en el año</Text>
-              <Text style={[styles.kpiValue, { fontSize: 22 }]}>${totalMppCommission.toLocaleString('es-CL')}</Text>
-              <Text style={styles.kpiSub}>comisión acumulada</Text>
+              <Text style={styles.kpiValue}>{totalMppCount}</Text>
+              <Text style={styles.kpiSub}>${totalMppCommission.toLocaleString('es-CL')} comisión</Text>
             </View>
             <View style={[styles.kpiCard, { backgroundColor: '#1A252F' }]}>
               <Text style={styles.kpiLabel}>Comisión anual</Text>
