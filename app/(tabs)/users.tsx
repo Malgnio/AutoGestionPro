@@ -21,6 +21,7 @@ export default function UsersScreen() {
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteName, setInviteName] = useState('')
   const [inviteRole, setInviteRole] = useState<'admin' | 'vendedor'>('vendedor')
+  const [invitePassword, setInvitePassword] = useState('')
   const [inviting, setInviting] = useState(false)
   const [inviteError, setInviteError] = useState('')
   const [inviteSuccess, setInviteSuccess] = useState('')
@@ -46,27 +47,28 @@ export default function UsersScreen() {
   }
 
   async function handleInvite() {
-    if (!inviteEmail || !inviteName) { setInviteError('Completa todos los campos'); return }
+    if (!inviteEmail || !inviteName || !invitePassword) { setInviteError('Completa todos los campos'); return }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inviteEmail)) { setInviteError('Email inválido'); return }
+    if (invitePassword.length < 6) { setInviteError('La contraseña debe tener al menos 6 caracteres'); return }
     setInviting(true)
     setInviteError('')
     setInviteSuccess('')
 
     const { error } = await supabase.functions.invoke('invite-user', {
-      body: { email: inviteEmail, full_name: inviteName, role: inviteRole }
+      body: { email: inviteEmail, full_name: inviteName, role: inviteRole, password: invitePassword }
     })
 
     setInviting(false)
     if (error) {
       const msg = error.message?.toLowerCase() ?? ''
       if (msg.includes('already been invited') || msg.includes('already registered') || msg.includes('already exists') || msg.includes('unique')) {
-        setInviteError(`El correo ${inviteEmail} ya está registrado. Si olvidó su contraseña, puede recuperarla desde la pantalla de login.`)
+        setInviteError(`El correo ${inviteEmail} ya está registrado.`)
       } else {
-        setInviteError('Error al enviar invitación: ' + error.message)
+        setInviteError('Error: ' + error.message)
       }
     } else {
-      setInviteSuccess(`Invitación enviada a ${inviteEmail}`)
-      setInviteEmail(''); setInviteName(''); setInviteRole('vendedor')
+      setInviteSuccess(`Usuario ${inviteName} creado correctamente`)
+      setInviteEmail(''); setInviteName(''); setInviteRole('vendedor'); setInvitePassword('')
       loadUsers()
     }
   }
@@ -81,7 +83,7 @@ export default function UsersScreen() {
           <Text style={styles.pageSub}>Gestión de acceso a la aplicación</Text>
         </View>
         <TouchableOpacity style={styles.addButton} onPress={() => { setShowInvite(true); setInviteError(''); setInviteSuccess('') }}>
-          <Text style={styles.addButtonText}>+ Invitar usuario</Text>
+          <Text style={styles.addButtonText}>+ Nuevo usuario</Text>
         </TouchableOpacity>
       </View>
 
@@ -128,8 +130,8 @@ export default function UsersScreen() {
       <View style={[styles.drawer, showInvite && styles.drawerOpen]}>
         <View style={styles.drawerHeader}>
           <View>
-            <Text style={styles.drawerTitle}>Invitar usuario</Text>
-            <Text style={styles.drawerSub}>Se enviará un email con acceso</Text>
+            <Text style={styles.drawerTitle}>Nuevo usuario</Text>
+            <Text style={styles.drawerSub}>Crea acceso directo sin email</Text>
           </View>
           <TouchableOpacity onPress={() => setShowInvite(false)}>
             <Text style={styles.closeBtn}>✕</Text>
@@ -160,6 +162,16 @@ export default function UsersScreen() {
             keyboardType="email-address"
           />
 
+          <Text style={styles.label}>Contraseña</Text>
+          <TextInput
+            style={styles.input}
+            value={invitePassword}
+            onChangeText={setInvitePassword}
+            placeholder="Mínimo 6 caracteres"
+            placeholderTextColor={Colors.textLight}
+            secureTextEntry
+          />
+
           <Text style={styles.label}>Rol</Text>
           <View style={styles.typeRow}>
             {(['vendedor', 'admin'] as const).map(r => (
@@ -181,7 +193,7 @@ export default function UsersScreen() {
             <Text style={styles.cancelButtonText}>Cancelar</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.saveButton} onPress={handleInvite} disabled={inviting}>
-            {inviting ? <ActivityIndicator color={Colors.white} /> : <Text style={styles.saveButtonText}>Enviar invitación</Text>}
+            {inviting ? <ActivityIndicator color={Colors.white} /> : <Text style={styles.saveButtonText}>Crear usuario</Text>}
           </TouchableOpacity>
         </View>
       </View>
