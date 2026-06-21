@@ -184,7 +184,7 @@ export default function DashboardScreen() {
                   return (
                     <View
                       key={i}
-                      style={styles.barGroup}
+                      style={[styles.barGroup, isHovered && { zIndex: 100 } as any]}
                       // @ts-ignore
                       onMouseEnter={() => setHoveredMonth(i)}
                       onMouseLeave={() => setHoveredMonth(null)}
@@ -286,18 +286,18 @@ const styles = StyleSheet.create({
   legendDot: { width: 10, height: 10, borderRadius: 5 },
   legendLine: { width: 20, height: 3, borderRadius: 2 },
   legendText: { fontSize: 12, color: Colors.textLight },
-  chartWrapper: { position: 'relative' as any },
-  chart: { flexDirection: 'row', alignItems: 'flex-end', height: 180, gap: 4 },
+  chartWrapper: { position: 'relative' as any, overflow: 'visible' as any },
+  chart: { flexDirection: 'row', alignItems: 'flex-end', height: 180, gap: 4, overflow: 'visible' as any },
   lineOverlay: { position: 'absolute' as any, top: 0, left: 0, right: 0, bottom: 20, overflow: 'hidden' as any },
   lineDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.accent, borderWidth: 2, borderColor: Colors.white, zIndex: 1 },
-  barGroup: { flex: 1, alignItems: 'center', gap: 4 },
+  barGroup: { flex: 1, alignItems: 'center', gap: 4, zIndex: 1 },
   bars: { flexDirection: 'row', alignItems: 'flex-end', gap: 2, height: 150 },
   barWrapper: { alignItems: 'center', justifyContent: 'flex-end' },
   bar: { width: 14, borderRadius: 3, minHeight: 2 },
   barVal: { fontSize: 9, color: Colors.textLight, marginBottom: 2 },
   barLabel: { fontSize: 10, color: Colors.textLight, textAlign: 'center' },
   tooltip: {
-    position: 'absolute' as any, bottom: 36, zIndex: 10,
+    position: 'absolute' as any, bottom: 50, zIndex: 200,
     backgroundColor: Colors.white, borderRadius: 10, padding: 14,
     shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 12, elevation: 8,
     borderWidth: 1, borderColor: Colors.border, minWidth: 170,
