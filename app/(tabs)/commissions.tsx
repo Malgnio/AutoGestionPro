@@ -32,6 +32,9 @@ export default function CommissionsScreen() {
   const [salesCount, setSalesCount] = useState(0)
   const [creditsCount, setCreditsCount] = useState(0)
   const [totalDealer, setTotalDealer] = useState(0)
+  const [insuranceCount, setInsuranceCount] = useState(0)
+  const [vppCount, setVppCount] = useState(0)
+  const [mppList, setMppList] = useState<{ product_type: string }[]>([])
   const [baseSalary, setBaseSalary] = useState(0)
   const [baseSalaryInput, setBaseSalaryInput] = useState('')
   const [editingSalary, setEditingSalary] = useState(false)
@@ -48,15 +51,21 @@ export default function CommissionsScreen() {
     const end = new Date(selectedYear, selectedMonth + 1, 0).toISOString().split('T')[0]
     const monthKey = new Date(selectedYear, selectedMonth, 1).toISOString().split('T')[0]
 
-    const [{ data: sales }, { data: credits }, { data: salary }] = await Promise.all([
+    const [{ data: sales }, { data: credits }, { data: insurance }, { data: vpp }, { data: mpp }, { data: salary }] = await Promise.all([
       supabase.from('sales').select('id').eq('user_id', user.id).gte('sale_month', start).lte('sale_month', end),
       supabase.from('credits').select('dealer_cost').eq('user_id', user.id).gte('sale_month', start).lte('sale_month', end),
+      supabase.from('insurance').select('id').eq('user_id', user.id).gte('sale_month', start).lte('sale_month', end),
+      supabase.from('vpp').select('id').eq('user_id', user.id).gte('sale_month', start).lte('sale_month', end),
+      supabase.from('mpp').select('product_type').eq('user_id', user.id).gte('sale_month', start).lte('sale_month', end),
       supabase.from('salaries').select('base_salary').eq('user_id', user.id).eq('month', monthKey).maybeSingle(),
     ])
 
     setSalesCount(sales?.length ?? 0)
     setCreditsCount(credits?.length ?? 0)
     setTotalDealer(credits?.reduce((sum, c) => sum + Number(c.dealer_cost), 0) ?? 0)
+    setInsuranceCount(insurance?.length ?? 0)
+    setVppCount(vpp?.length ?? 0)
+    setMppList(mpp ?? [])
     const saved = salary?.base_salary ?? 0
     setBaseSalary(saved)
     setBaseSalaryInput(saved > 0 ? String(saved) : '')
@@ -81,7 +90,14 @@ export default function CommissionsScreen() {
   const salesRate = getSalesRate(salesCount)
   const creditRate = getCreditRate(creditsCount)
   const dealerSinIva = totalDealer / 1.19
-  const creditCommission = dealerSinIva * creditRate
+  const MPP_COMMISSION: Record<string, number> = { Platinium: 16000, Diamond: 21000, Zafiro: 26000 }
+
+  const commUnidades = salesCount * 70000
+  const commCreditos = dealerSinIva * creditRate
+  const commSeguros = insuranceCount * 23000
+  const commVpp = vppCount * 70000
+  const commMpp = mppList.reduce((sum, v) => sum + (MPP_COMMISSION[v.product_type] ?? 0), 0)
+  const totalCommission = commUnidades + commCreditos + commSeguros + commVpp + commMpp
 
   return (
     <View style={styles.container}>
@@ -154,9 +170,9 @@ export default function CommissionsScreen() {
             <View style={styles.summaryCard}>
               <Text style={styles.cardTitle}>Resumen {MONTHS[selectedMonth]}</Text>
 
-              {/* Sueldo Base */}
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Sueldo Base</Text>
+              {/* Sueldo Base destacado */}
+              <View style={styles.salaryBlock}>
+                <Text style={styles.salaryBlockLabel}>Sueldo Base</Text>
                 {editingSalary ? (
                   <View style={styles.salaryEditRow}>
                     <TextInput
@@ -177,31 +193,38 @@ export default function CommissionsScreen() {
                   </View>
                 ) : (
                   <TouchableOpacity onPress={() => { setEditingSalary(true); setBaseSalaryInput(baseSalary > 0 ? String(baseSalary) : '') }} style={styles.salaryValueRow}>
-                    <Text style={styles.summaryValue}>${baseSalary.toLocaleString('es-CL')}</Text>
+                    <Text style={styles.salaryBlockValue}>${baseSalary.toLocaleString('es-CL')}</Text>
                     <Text style={styles.editIcon}>✏️</Text>
                   </TouchableOpacity>
                 )}
               </View>
 
+              <View style={styles.divider} />
+
               <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Total C. Dealer</Text>
-                <Text style={styles.summaryValue}>${Math.round(totalDealer).toLocaleString('es-CL')}</Text>
+                <Text style={styles.summaryLabel}>Comisión por Unidades</Text>
+                <Text style={styles.summaryValue}>${commUnidades.toLocaleString('es-CL')}</Text>
               </View>
               <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>C. Dealer sin IVA (−19%)</Text>
-                <Text style={styles.summaryValue}>${Math.round(dealerSinIva).toLocaleString('es-CL')}</Text>
+                <Text style={styles.summaryLabel}>Comisión por Créditos</Text>
+                <Text style={styles.summaryValue}>${Math.round(commCreditos).toLocaleString('es-CL')}</Text>
               </View>
               <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Tasa créditos ({creditsCount} créd.)</Text>
-                <Text style={styles.summaryValue}>{(creditRate * 100).toFixed(0)}%</Text>
+                <Text style={styles.summaryLabel}>Comisión por Seguros</Text>
+                <Text style={styles.summaryValue}>${commSeguros.toLocaleString('es-CL')}</Text>
               </View>
               <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabel}>Unidades vendidas</Text>
-                <Text style={styles.summaryValue}>{salesCount} → {(salesRate * 100).toFixed(0)}%</Text>
+                <Text style={styles.summaryLabel}>Comisión VPP</Text>
+                <Text style={styles.summaryValue}>${commVpp.toLocaleString('es-CL')}</Text>
               </View>
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Comisión MPP</Text>
+                <Text style={styles.summaryValue}>${commMpp.toLocaleString('es-CL')}</Text>
+              </View>
+
               <View style={styles.totalRow}>
-                <Text style={styles.totalLabel}>Comisión a pagar</Text>
-                <Text style={styles.totalValue}>${Math.round(creditCommission).toLocaleString('es-CL')}</Text>
+                <Text style={styles.totalLabel}>Total Comisiones</Text>
+                <Text style={styles.totalValue}>${Math.round(totalCommission).toLocaleString('es-CL')}</Text>
               </View>
             </View>
 
@@ -241,11 +264,15 @@ const styles = StyleSheet.create({
   totalRow: { flexDirection: 'row', justifyContent: 'space-between', paddingTop: 16, marginTop: 4 },
   totalLabel: { fontSize: 16, fontWeight: 'bold', color: Colors.accent },
   totalValue: { fontSize: 20, fontWeight: 'bold', color: Colors.accent },
+  salaryBlock: { backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 10, padding: 16, marginBottom: 16 },
+  salaryBlockLabel: { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 },
+  salaryBlockValue: { fontSize: 26, fontWeight: 'bold', color: Colors.white },
+  divider: { height: 1, backgroundColor: 'rgba(255,255,255,0.15)', marginBottom: 12 },
   salaryEditRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  salaryInput: { borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.5)', color: Colors.white, fontSize: 14, minWidth: 80, paddingVertical: 2, textAlign: 'right', outlineStyle: 'none' } as any,
+  salaryInput: { borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.5)', color: Colors.white, fontSize: 22, minWidth: 120, paddingVertical: 2, outlineStyle: 'none' } as any,
   salaryBtn: { backgroundColor: Colors.success, borderRadius: 4, paddingHorizontal: 8, paddingVertical: 4 },
   salaryBtnCancel: { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 4, paddingHorizontal: 8, paddingVertical: 4 },
   salaryBtnText: { color: Colors.white, fontSize: 13, fontWeight: 'bold' },
-  salaryValueRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  editIcon: { fontSize: 12, opacity: 0.7 },
+  salaryValueRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  editIcon: { fontSize: 14 },
 })
