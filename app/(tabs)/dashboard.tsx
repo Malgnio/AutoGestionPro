@@ -90,7 +90,7 @@ export default function DashboardScreen() {
         <View style={styles.yearRow}>
           {YEARS.map(y => (
             <TouchableOpacity key={y} style={[styles.yearBtn, selectedYear === y && styles.yearBtnActive]} onPress={() => setSelectedYear(y)}>
-              <Text style={[styles.yearBtnText, selectedYear === y && styles.yearBtnTextActive]}>FY{y}</Text>
+              <Text style={[styles.yearBtnText, selectedYear === y && styles.yearBtnTextActive]}>{y}</Text>
             </TouchableOpacity>
           ))}
         </View>
