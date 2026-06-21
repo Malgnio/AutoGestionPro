@@ -20,10 +20,14 @@ const CREDIT_COMMISSION = [
   { min: 1, max: 1, rate: 0.04, label: '1' },
 ]
 
+const MPP_COMMISSION: Record<string, number> = { Platinium: 16000, Diamond: 21000, Zafiro: 26000 }
+
 function getSalesRate(u: number) { return SALES_COMMISSION.find(r => u >= r.min && u <= r.max)?.rate ?? 0 }
 function getCreditRate(c: number) { return CREDIT_COMMISSION.find(r => c >= r.min && c <= r.max)?.rate ?? 0 }
 
 const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+
+type Bonus = { id: string; description: string; amount: number }
 
 export default function CommissionsScreen() {
   const [loading, setLoading] = useState(true)
@@ -39,6 +43,11 @@ export default function CommissionsScreen() {
   const [baseSalaryInput, setBaseSalaryInput] = useState('')
   const [editingSalary, setEditingSalary] = useState(false)
   const [savingSalary, setSavingSalary] = useState(false)
+  const [bonuses, setBonuses] = useState<Bonus[]>([])
+  const [showBonusForm, setShowBonusForm] = useState(false)
+  const [bonusDesc, setBonusDesc] = useState('')
+  const [bonusAmount, setBonusAmount] = useState('')
+  const [savingBonus, setSavingBonus] = useState(false)
 
   useEffect(() => { loadData() }, [selectedMonth])
 
@@ -51,13 +60,14 @@ export default function CommissionsScreen() {
     const end = new Date(selectedYear, selectedMonth + 1, 0).toISOString().split('T')[0]
     const monthKey = new Date(selectedYear, selectedMonth, 1).toISOString().split('T')[0]
 
-    const [{ data: sales }, { data: credits }, { data: insurance }, { data: vpp }, { data: mpp }, { data: salary }] = await Promise.all([
+    const [{ data: sales }, { data: credits }, { data: insurance }, { data: vpp }, { data: mpp }, { data: salary }, { data: bonusData }] = await Promise.all([
       supabase.from('sales').select('id').eq('user_id', user.id).gte('sale_month', start).lte('sale_month', end),
       supabase.from('credits').select('dealer_cost').eq('user_id', user.id).gte('sale_month', start).lte('sale_month', end),
       supabase.from('insurance').select('id').eq('user_id', user.id).gte('sale_month', start).lte('sale_month', end),
       supabase.from('vpp').select('id').eq('user_id', user.id).gte('sale_month', start).lte('sale_month', end),
       supabase.from('mpp').select('product_type').eq('user_id', user.id).gte('sale_month', start).lte('sale_month', end),
       supabase.from('salaries').select('base_salary').eq('user_id', user.id).eq('month', monthKey).maybeSingle(),
+      supabase.from('bonuses').select('id, description, amount').eq('user_id', user.id).eq('month', monthKey).order('created_at'),
     ])
 
     setSalesCount(sales?.length ?? 0)
@@ -66,6 +76,7 @@ export default function CommissionsScreen() {
     setInsuranceCount(insurance?.length ?? 0)
     setVppCount(vpp?.length ?? 0)
     setMppList(mpp ?? [])
+    setBonuses(bonusData ?? [])
     const saved = salary?.base_salary ?? 0
     setBaseSalary(saved)
     setBaseSalaryInput(saved > 0 ? String(saved) : '')
@@ -87,17 +98,38 @@ export default function CommissionsScreen() {
     setSavingSalary(false)
   }
 
+  async function handleAddBonus() {
+    if (!bonusDesc || !bonusAmount) return
+    setSavingBonus(true)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    const monthKey = new Date(selectedYear, selectedMonth, 1).toISOString().split('T')[0]
+    const value = parseInt(bonusAmount.replace(/\./g, '').replace(/,/g, '')) || 0
+    await supabase.from('bonuses').insert({ user_id: user.id, month: monthKey, description: bonusDesc, amount: value })
+    setBonusDesc('')
+    setBonusAmount('')
+    setShowBonusForm(false)
+    setSavingBonus(false)
+    loadData()
+  }
+
+  async function handleDeleteBonus(id: string) {
+    await supabase.from('bonuses').delete().eq('id', id)
+    loadData()
+  }
+
   const salesRate = getSalesRate(salesCount)
   const creditRate = getCreditRate(creditsCount)
   const dealerSinIva = totalDealer / 1.19
-  const MPP_COMMISSION: Record<string, number> = { Platinium: 16000, Diamond: 21000, Zafiro: 26000 }
 
   const commUnidades = salesCount * 70000
   const commCreditos = dealerSinIva * creditRate
   const commSeguros = insuranceCount * 23000
   const commVpp = vppCount * 70000
   const commMpp = mppList.reduce((sum, v) => sum + (MPP_COMMISSION[v.product_type] ?? 0), 0)
+  const totalBonuses = bonuses.reduce((sum, b) => sum + b.amount, 0)
   const totalCommission = commUnidades + commCreditos + commSeguros + commVpp + commMpp
+  const grandTotal = baseSalary + totalCommission + totalBonuses
 
   return (
     <View style={styles.container}>
@@ -170,7 +202,7 @@ export default function CommissionsScreen() {
             <View style={styles.summaryCard}>
               <Text style={styles.cardTitle}>Resumen {MONTHS[selectedMonth]}</Text>
 
-              {/* Sueldo Base destacado */}
+              {/* Sueldo Base */}
               <View style={styles.salaryBlock}>
                 <Text style={styles.salaryBlockLabel}>Sueldo Base</Text>
                 {editingSalary ? (
@@ -201,6 +233,7 @@ export default function CommissionsScreen() {
 
               <View style={styles.divider} />
 
+              {/* Comisiones */}
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryLabel}>Comisión por Unidades</Text>
                 <Text style={styles.summaryValue}>${commUnidades.toLocaleString('es-CL')}</Text>
@@ -222,9 +255,65 @@ export default function CommissionsScreen() {
                 <Text style={styles.summaryValue}>${commMpp.toLocaleString('es-CL')}</Text>
               </View>
 
+              <View style={styles.divider} />
+
+              {/* Bonos */}
+              <View style={styles.bonusHeader}>
+                <Text style={styles.bonusSectionLabel}>Bonos</Text>
+                <TouchableOpacity onPress={() => setShowBonusForm(v => !v)} style={styles.addBonusBtn}>
+                  <Text style={styles.addBonusBtnText}>+ Agregar</Text>
+                </TouchableOpacity>
+              </View>
+
+              {showBonusForm && (
+                <View style={styles.bonusForm}>
+                  <TextInput
+                    style={styles.bonusInput}
+                    value={bonusDesc}
+                    onChangeText={setBonusDesc}
+                    placeholder="Descripción del bono"
+                    placeholderTextColor="rgba(255,255,255,0.4)"
+                  />
+                  <View style={styles.bonusFormRow}>
+                    <TextInput
+                      style={[styles.bonusInput, { flex: 1 }]}
+                      value={bonusAmount}
+                      onChangeText={setBonusAmount}
+                      placeholder="Monto"
+                      placeholderTextColor="rgba(255,255,255,0.4)"
+                      keyboardType="numeric"
+                    />
+                    <TouchableOpacity onPress={handleAddBonus} disabled={savingBonus} style={styles.salaryBtn}>
+                      <Text style={styles.salaryBtnText}>{savingBonus ? '...' : '✓'}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => setShowBonusForm(false)} style={styles.salaryBtnCancel}>
+                      <Text style={styles.salaryBtnText}>✕</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
+
+              {bonuses.map(b => (
+                <View key={b.id} style={styles.bonusRow}>
+                  <Text style={styles.bonusDesc}>{b.description}</Text>
+                  <View style={styles.bonusRight}>
+                    <Text style={styles.summaryValue}>${b.amount.toLocaleString('es-CL')}</Text>
+                    <TouchableOpacity onPress={() => handleDeleteBonus(b.id)} style={styles.deleteBonusBtn}>
+                      <Text style={styles.deleteBonusText}>✕</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))}
+
+              {bonuses.length === 0 && !showBonusForm && (
+                <Text style={styles.noBonusText}>Sin bonos este mes</Text>
+              )}
+
+              {/* Total */}
+              <View style={styles.divider} />
               <View style={styles.totalRow}>
-                <Text style={styles.totalLabel}>Total Comisiones</Text>
-                <Text style={styles.totalValue}>${Math.round(totalCommission).toLocaleString('es-CL')}</Text>
+                <Text style={styles.totalLabel}>Total a recibir</Text>
+                <Text style={styles.totalValue}>${Math.round(grandTotal).toLocaleString('es-CL')}</Text>
               </View>
             </View>
 
@@ -258,16 +347,16 @@ const styles = StyleSheet.create({
   tdActive: { color: Colors.white, fontWeight: 'bold' },
   resultBox: { marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: Colors.border },
   resultText: { fontSize: 13, color: Colors.secondary },
-  summaryRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.15)' },
+  summaryRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.1)' },
   summaryLabel: { fontSize: 13, color: 'rgba(255,255,255,0.7)' },
-  summaryValue: { fontSize: 14, color: Colors.white, fontWeight: '600' },
-  totalRow: { flexDirection: 'row', justifyContent: 'space-between', paddingTop: 16, marginTop: 4 },
+  summaryValue: { fontSize: 13, color: Colors.white, fontWeight: '600' },
+  totalRow: { flexDirection: 'row', justifyContent: 'space-between', paddingTop: 12 },
   totalLabel: { fontSize: 16, fontWeight: 'bold', color: Colors.accent },
   totalValue: { fontSize: 20, fontWeight: 'bold', color: Colors.accent },
   salaryBlock: { backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: 10, padding: 16, marginBottom: 16 },
-  salaryBlockLabel: { fontSize: 12, color: 'rgba(255,255,255,0.6)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 },
+  salaryBlockLabel: { fontSize: 11, color: 'rgba(255,255,255,0.6)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 },
   salaryBlockValue: { fontSize: 26, fontWeight: 'bold', color: Colors.white },
-  divider: { height: 1, backgroundColor: 'rgba(255,255,255,0.15)', marginBottom: 12 },
+  divider: { height: 1, backgroundColor: 'rgba(255,255,255,0.15)', marginVertical: 12 },
   salaryEditRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   salaryInput: { borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.5)', color: Colors.white, fontSize: 22, minWidth: 120, paddingVertical: 2, outlineStyle: 'none' } as any,
   salaryBtn: { backgroundColor: Colors.success, borderRadius: 4, paddingHorizontal: 8, paddingVertical: 4 },
@@ -275,4 +364,17 @@ const styles = StyleSheet.create({
   salaryBtnText: { color: Colors.white, fontSize: 13, fontWeight: 'bold' },
   salaryValueRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   editIcon: { fontSize: 14 },
+  bonusHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  bonusSectionLabel: { fontSize: 11, color: 'rgba(255,255,255,0.6)', textTransform: 'uppercase', letterSpacing: 0.5 },
+  addBonusBtn: { backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 6, paddingHorizontal: 10, paddingVertical: 4 },
+  addBonusBtnText: { color: Colors.white, fontSize: 12, fontWeight: '600' },
+  bonusForm: { gap: 8, marginBottom: 8 },
+  bonusFormRow: { flexDirection: 'row', gap: 6, alignItems: 'center' },
+  bonusInput: { borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.4)', color: Colors.white, fontSize: 13, paddingVertical: 4, marginBottom: 4, outlineStyle: 'none' } as any,
+  bonusRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 6, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.1)' },
+  bonusDesc: { fontSize: 13, color: 'rgba(255,255,255,0.8)', flex: 1 },
+  bonusRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  deleteBonusBtn: { backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2 },
+  deleteBonusText: { color: 'rgba(255,255,255,0.6)', fontSize: 11 },
+  noBonusText: { fontSize: 12, color: 'rgba(255,255,255,0.4)', paddingVertical: 6, fontStyle: 'italic' },
 })
