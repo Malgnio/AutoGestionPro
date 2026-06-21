@@ -10,7 +10,7 @@ type Credit = {
   customer_name: string
   rut: string
   dealer_cost: number
-  credit_type: 'OI' | 'CC'
+  credit_type: 'CI' | 'CC'
   sale_month: string
 }
 
@@ -32,8 +32,8 @@ function getCreditRate(count: number) {
   return CREDIT_COMMISSION.find(r => count >= r.min && count <= r.max)?.rate ?? 0
 }
 
-const CREDIT_TYPES = ['OI', 'CC'] as const
-const CREDIT_TYPE_LABEL: Record<string, string> = { OI: 'Crédito Inteligente', CC: 'Crédito Convencional' }
+const CREDIT_TYPES = ['CI', 'CC'] as const
+const CREDIT_TYPE_LABEL: Record<string, string> = { CI: 'Crédito Inteligente', CC: 'Crédito Convencional' }
 const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
 
 export default function CreditsScreen() {
@@ -52,7 +52,7 @@ export default function CreditsScreen() {
   const [customerName, setCustomerName] = useState('')
   const [rut, setRut] = useState('')
   const [dealerCost, setDealerCost] = useState('')
-  const [creditType, setCreditType] = useState<'OI' | 'CC'>('OI')
+  const [creditType, setCreditType] = useState<'CI' | 'CC'>('CI')
 
 
   useEffect(() => { loadCredits() }, [selectedYear, selectedMonth])
@@ -91,7 +91,7 @@ export default function CreditsScreen() {
   }
 
   function resetForm() {
-    setCustomerName(''); setRut(''); setDealerCost(''); setCreditType('OI'); setError(''); setEditingId(null); setShowDropdown(false)
+    setCustomerName(''); setRut(''); setDealerCost(''); setCreditType('CI'); setError(''); setEditingId(null); setShowDropdown(false)
   }
 
   function selectSale(sale: SaleOption) {
@@ -105,7 +105,7 @@ export default function CreditsScreen() {
     setCustomerName(item.customer_name)
     setRut(item.rut)
     setDealerCost(String(item.dealer_cost))
-    setCreditType(item.credit_type)
+    setCreditType(item.credit_type as 'CI' | 'CC')
     setError('')
     setShowForm(true)
   }
@@ -227,7 +227,7 @@ export default function CreditsScreen() {
                     <Text style={[styles.cell, styles.cellRut]}>{item.rut}</Text>
                     <Text style={[styles.cell, styles.cellCost]}>${Number(item.dealer_cost).toLocaleString('es-CL')}</Text>
                     <View style={[styles.cell, styles.cellType]}>
-                      <View style={[styles.badge, item.credit_type === 'OI' ? styles.badgeCI : styles.badgeCC]}>
+                      <View style={[styles.badge, item.credit_type === 'CI' ? styles.badgeCI : styles.badgeCC]}>
                         <Text style={styles.badgeText}>{item.credit_type}</Text>
                       </View>
                     </View>
@@ -356,7 +356,7 @@ const styles = StyleSheet.create({
   cellType: { width: 90 },
   cellAction: { width: 72, flexDirection: 'row', justifyContent: 'flex-end', gap: 4 },
   badge: { borderRadius: 4, paddingHorizontal: 8, paddingVertical: 2, alignSelf: 'flex-start' },
-  badgeCI: { backgroundColor: Colors.secondary },
+  badgeCI: { backgroundColor: Colors.secondary }, // CI
   badgeCC: { backgroundColor: Colors.accent },
   badgeText: { color: Colors.white, fontSize: 11, fontWeight: '600' },
   iconBtn: { padding: 6, borderRadius: 6, backgroundColor: '#F0F3F6' },
