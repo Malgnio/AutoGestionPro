@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, TextInput } from 'react-native'
 import { supabase } from '../../lib/supabase'
 import { Colors } from '../../constants/colors'
 
@@ -32,6 +32,10 @@ export default function CommissionsScreen() {
   const [salesCount, setSalesCount] = useState(0)
   const [creditsCount, setCreditsCount] = useState(0)
   const [totalDealer, setTotalDealer] = useState(0)
+  const [baseSalary, setBaseSalary] = useState(0)
+  const [baseSalaryInput, setBaseSalaryInput] = useState('')
+  const [editingSalary, setEditingSalary] = useState(false)
+  const [savingSalary, setSavingSalary] = useState(false)
 
   useEffect(() => { loadData() }, [selectedMonth])
 
@@ -42,16 +46,36 @@ export default function CommissionsScreen() {
 
     const start = new Date(selectedYear, selectedMonth, 1).toISOString().split('T')[0]
     const end = new Date(selectedYear, selectedMonth + 1, 0).toISOString().split('T')[0]
+    const monthKey = new Date(selectedYear, selectedMonth, 1).toISOString().split('T')[0]
 
-    const [{ data: sales }, { data: credits }] = await Promise.all([
+    const [{ data: sales }, { data: credits }, { data: salary }] = await Promise.all([
       supabase.from('sales').select('id').eq('user_id', user.id).gte('sale_month', start).lte('sale_month', end),
       supabase.from('credits').select('dealer_cost').eq('user_id', user.id).gte('sale_month', start).lte('sale_month', end),
+      supabase.from('salaries').select('base_salary').eq('user_id', user.id).eq('month', monthKey).maybeSingle(),
     ])
 
     setSalesCount(sales?.length ?? 0)
     setCreditsCount(credits?.length ?? 0)
     setTotalDealer(credits?.reduce((sum, c) => sum + Number(c.dealer_cost), 0) ?? 0)
+    const saved = salary?.base_salary ?? 0
+    setBaseSalary(saved)
+    setBaseSalaryInput(saved > 0 ? String(saved) : '')
     setLoading(false)
+  }
+
+  async function handleSaveSalary() {
+    setSavingSalary(true)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    const monthKey = new Date(selectedYear, selectedMonth, 1).toISOString().split('T')[0]
+    const value = parseInt(baseSalaryInput.replace(/\./g, '').replace(/,/g, '')) || 0
+    await supabase.from('salaries').upsert(
+      { user_id: user.id, month: monthKey, base_salary: value },
+      { onConflict: 'user_id,month' }
+    )
+    setBaseSalary(value)
+    setEditingSalary(false)
+    setSavingSalary(false)
   }
 
   const salesRate = getSalesRate(salesCount)
@@ -129,6 +153,36 @@ export default function CommissionsScreen() {
 
             <View style={styles.summaryCard}>
               <Text style={styles.cardTitle}>Resumen {MONTHS[selectedMonth]}</Text>
+
+              {/* Sueldo Base */}
+              <View style={styles.summaryRow}>
+                <Text style={styles.summaryLabel}>Sueldo Base</Text>
+                {editingSalary ? (
+                  <View style={styles.salaryEditRow}>
+                    <TextInput
+                      style={styles.salaryInput}
+                      value={baseSalaryInput}
+                      onChangeText={setBaseSalaryInput}
+                      keyboardType="numeric"
+                      placeholder="0"
+                      placeholderTextColor="rgba(255,255,255,0.4)"
+                      autoFocus
+                    />
+                    <TouchableOpacity onPress={handleSaveSalary} disabled={savingSalary} style={styles.salaryBtn}>
+                      <Text style={styles.salaryBtnText}>{savingSalary ? '...' : '✓'}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => setEditingSalary(false)} style={styles.salaryBtnCancel}>
+                      <Text style={styles.salaryBtnText}>✕</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <TouchableOpacity onPress={() => { setEditingSalary(true); setBaseSalaryInput(baseSalary > 0 ? String(baseSalary) : '') }} style={styles.salaryValueRow}>
+                    <Text style={styles.summaryValue}>${baseSalary.toLocaleString('es-CL')}</Text>
+                    <Text style={styles.editIcon}>✏️</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+
               <View style={styles.summaryRow}>
                 <Text style={styles.summaryLabel}>Total C. Dealer</Text>
                 <Text style={styles.summaryValue}>${Math.round(totalDealer).toLocaleString('es-CL')}</Text>
@@ -187,4 +241,11 @@ const styles = StyleSheet.create({
   totalRow: { flexDirection: 'row', justifyContent: 'space-between', paddingTop: 16, marginTop: 4 },
   totalLabel: { fontSize: 16, fontWeight: 'bold', color: Colors.accent },
   totalValue: { fontSize: 20, fontWeight: 'bold', color: Colors.accent },
+  salaryEditRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  salaryInput: { borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.5)', color: Colors.white, fontSize: 14, minWidth: 80, paddingVertical: 2, textAlign: 'right', outlineStyle: 'none' } as any,
+  salaryBtn: { backgroundColor: Colors.success, borderRadius: 4, paddingHorizontal: 8, paddingVertical: 4 },
+  salaryBtnCancel: { backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 4, paddingHorizontal: 8, paddingVertical: 4 },
+  salaryBtnText: { color: Colors.white, fontSize: 13, fontWeight: 'bold' },
+  salaryValueRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  editIcon: { fontSize: 12, opacity: 0.7 },
 })
