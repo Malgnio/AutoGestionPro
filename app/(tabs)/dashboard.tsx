@@ -33,12 +33,13 @@ type MonthData = {
   dealer: number
   vpp: number
   mppCommission: number
+  mppCount: number
 }
 
 export default function DashboardScreen() {
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
   const [loading, setLoading] = useState(true)
-  const [monthData, setMonthData] = useState<MonthData[]>(Array(12).fill({ sales: 0, credits: 0, dealer: 0, vpp: 0, mppCommission: 0 }))
+  const [monthData, setMonthData] = useState<MonthData[]>(Array(12).fill({ sales: 0, credits: 0, dealer: 0, vpp: 0, mppCommission: 0, mppCount: 0 }))
   const [hoveredMonth, setHoveredMonth] = useState<number | null>(null)
 
   useEffect(() => { loadData() }, [selectedYear])
@@ -58,12 +59,12 @@ export default function DashboardScreen() {
       supabase.from('mpp').select('sale_month, product_type').eq('user_id', user.id).gte('sale_month', start).lte('sale_month', end),
     ])
 
-    const data: MonthData[] = Array.from({ length: 12 }, () => ({ sales: 0, credits: 0, dealer: 0, vpp: 0, mppCommission: 0 }))
+    const data: MonthData[] = Array.from({ length: 12 }, () => ({ sales: 0, credits: 0, dealer: 0, vpp: 0, mppCommission: 0, mppCount: 0 }))
 
     sales?.forEach(s => { const m = new Date(s.sale_month).getUTCMonth(); data[m].sales += 1 })
     credits?.forEach(c => { const m = new Date(c.sale_month).getUTCMonth(); data[m].credits += 1; data[m].dealer += Number(c.dealer_cost) })
     vpp?.forEach(v => { const m = new Date(v.sale_month).getUTCMonth(); data[m].vpp += 1 })
-    mpp?.forEach(v => { const m = new Date(v.sale_month).getUTCMonth(); data[m].mppCommission += MPP_COMMISSION[v.product_type] ?? 0 })
+    mpp?.forEach(v => { const m = new Date(v.sale_month).getUTCMonth(); data[m].mppCommission += MPP_COMMISSION[v.product_type] ?? 0; data[m].mppCount += 1 })
 
     setMonthData(data)
     setLoading(false)
@@ -226,8 +227,8 @@ export default function DashboardScreen() {
                           <View style={[styles.bar, { height: Math.max(Math.round((m.vpp / maxBar) * BAR_HEIGHT), m.vpp > 0 ? 2 : 0), backgroundColor: isHovered ? '#0d3b5e' : Colors.primary }]} />
                         </View>
                         <View style={styles.barWrapper}>
-                          <Text style={styles.barVal}>{m.mppCommission > 0 ? Math.round(m.mppCommission / 1000) + 'k' : ''}</Text>
-                          <View style={[styles.bar, { height: Math.max(Math.round((m.mppCommission / (maxBar * 21000)) * BAR_HEIGHT), m.mppCommission > 0 ? 2 : 0), backgroundColor: '#2471A3' }]} />
+                          <Text style={styles.barVal}>{m.mppCount > 0 ? m.mppCount : ''}</Text>
+                          <View style={[styles.bar, { height: Math.max(Math.round((m.mppCount / maxBar) * BAR_HEIGHT), m.mppCount > 0 ? 2 : 0), backgroundColor: '#2471A3' }]} />
                         </View>
                       </View>
                       <Text style={[styles.barLabel, isHovered && { color: Colors.primary, fontWeight: 'bold' }]}>{MONTH_LABELS[i]}</Text>
