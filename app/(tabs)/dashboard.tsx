@@ -133,12 +133,12 @@ export default function DashboardScreen() {
             </View>
             <View style={[styles.kpiCard, { backgroundColor: '#2471A3' }]}>
               <Text style={styles.kpiLabel}>MPP en el año</Text>
-              <Text style={styles.kpiValue}>${totalMppCommission.toLocaleString('es-CL')}</Text>
+              <Text style={[styles.kpiValue, { fontSize: 22 }]}>${totalMppCommission.toLocaleString('es-CL')}</Text>
               <Text style={styles.kpiSub}>comisión acumulada</Text>
             </View>
             <View style={[styles.kpiCard, { backgroundColor: '#1A252F' }]}>
               <Text style={styles.kpiLabel}>Comisión anual</Text>
-              <Text style={[styles.kpiValue, { fontSize: 24 }]}>${Math.round(totalCommission).toLocaleString('es-CL')}</Text>
+              <Text style={[styles.kpiValue, { fontSize: 22 }]}>${Math.round(totalCommission).toLocaleString('es-CL')}</Text>
               <Text style={styles.kpiSub}>Créditos + VPP + MPP</Text>
             </View>
           </View>
@@ -155,6 +155,14 @@ export default function DashboardScreen() {
                 <View style={styles.legendItem}>
                   <View style={[styles.legendDot, { backgroundColor: Colors.success }]} />
                   <Text style={styles.legendText}>Créditos</Text>
+                </View>
+                <View style={styles.legendItem}>
+                  <View style={[styles.legendDot, { backgroundColor: Colors.primary }]} />
+                  <Text style={styles.legendText}>VPP</Text>
+                </View>
+                <View style={styles.legendItem}>
+                  <View style={[styles.legendDot, { backgroundColor: '#2471A3' }]} />
+                  <Text style={styles.legendText}>MPP</Text>
                 </View>
                 <View style={styles.legendItem}>
                   <View style={[styles.legendLine, { backgroundColor: Colors.accent }]} />
@@ -207,11 +215,19 @@ export default function DashboardScreen() {
                       <View style={styles.bars}>
                         <View style={styles.barWrapper}>
                           <Text style={styles.barVal}>{m.sales > 0 ? m.sales : ''}</Text>
-                          <View style={[styles.bar, { height: Math.max(Math.round((m.sales / maxBar) * BAR_HEIGHT), m.sales > 0 ? 2 : 0), backgroundColor: isHovered ? Colors.primary : Colors.secondary }]} />
+                          <View style={[styles.bar, { height: Math.max(Math.round((m.sales / maxBar) * BAR_HEIGHT), m.sales > 0 ? 2 : 0), backgroundColor: isHovered ? '#1a6ba0' : Colors.secondary }]} />
                         </View>
                         <View style={styles.barWrapper}>
                           <Text style={styles.barVal}>{m.credits > 0 ? m.credits : ''}</Text>
                           <View style={[styles.bar, { height: Math.max(Math.round((m.credits / maxBar) * BAR_HEIGHT), m.credits > 0 ? 2 : 0), backgroundColor: isHovered ? '#27AE60' : Colors.success }]} />
+                        </View>
+                        <View style={styles.barWrapper}>
+                          <Text style={styles.barVal}>{m.vpp > 0 ? m.vpp : ''}</Text>
+                          <View style={[styles.bar, { height: Math.max(Math.round((m.vpp / maxBar) * BAR_HEIGHT), m.vpp > 0 ? 2 : 0), backgroundColor: isHovered ? '#0d3b5e' : Colors.primary }]} />
+                        </View>
+                        <View style={styles.barWrapper}>
+                          <Text style={styles.barVal}>{m.mppCommission > 0 ? Math.round(m.mppCommission / 1000) + 'k' : ''}</Text>
+                          <View style={[styles.bar, { height: Math.max(Math.round((m.mppCommission / (maxBar * 21000)) * BAR_HEIGHT), m.mppCommission > 0 ? 2 : 0), backgroundColor: '#2471A3' }]} />
                         </View>
                       </View>
                       <Text style={[styles.barLabel, isHovered && { color: Colors.primary, fontWeight: 'bold' }]}>{MONTH_LABELS[i]}</Text>
