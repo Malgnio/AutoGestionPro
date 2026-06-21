@@ -58,7 +58,12 @@ export default function UsersScreen() {
 
     setInviting(false)
     if (error) {
-      setInviteError('Error al enviar invitación: ' + error.message)
+      const msg = error.message?.toLowerCase() ?? ''
+      if (msg.includes('already been invited') || msg.includes('already registered') || msg.includes('already exists') || msg.includes('unique')) {
+        setInviteError(`El correo ${inviteEmail} ya está registrado. Si olvidó su contraseña, puede recuperarla desde la pantalla de login.`)
+      } else {
+        setInviteError('Error al enviar invitación: ' + error.message)
+      }
     } else {
       setInviteSuccess(`Invitación enviada a ${inviteEmail}`)
       setInviteEmail(''); setInviteName(''); setInviteRole('vendedor')
