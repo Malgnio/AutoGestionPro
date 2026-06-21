@@ -201,10 +201,12 @@ export default function DashboardScreen() {
                             <Text style={styles.tooltipText}>Créditos: <Text style={styles.tooltipBold}>{m.credits}</Text></Text>
                           </View>
                           <View style={styles.tooltipRow}>
-                            <Text style={styles.tooltipText}>Penetración: <Text style={styles.tooltipBold}>{penetracion}%</Text></Text>
+                            <View style={[styles.tooltipDot, { backgroundColor: Colors.primary }]} />
+                            <Text style={styles.tooltipText}>VPP: <Text style={styles.tooltipBold}>{m.vpp}</Text></Text>
                           </View>
                           <View style={styles.tooltipRow}>
-                            <Text style={styles.tooltipText}>VPP: <Text style={styles.tooltipBold}>{m.vpp}</Text></Text>
+                            <View style={[styles.tooltipDot, { backgroundColor: '#2471A3' }]} />
+                            <Text style={styles.tooltipText}>MPP: <Text style={styles.tooltipBold}>{m.mppCount}</Text></Text>
                           </View>
                           {totalMes > 0 && (
                             <View style={[styles.tooltipRow, { borderTopWidth: 1, borderTopColor: Colors.border, paddingTop: 6, marginTop: 2 }]}>
@@ -286,8 +288,8 @@ const styles = StyleSheet.create({
   legendText: { fontSize: 12, color: Colors.textLight },
   chartWrapper: { position: 'relative' as any },
   chart: { flexDirection: 'row', alignItems: 'flex-end', height: 180, gap: 4 },
-  lineOverlay: { position: 'absolute' as any, top: 0, left: 0, right: 0, bottom: 20 },
-  lineDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.accent, borderWidth: 2, borderColor: Colors.white },
+  lineOverlay: { position: 'absolute' as any, top: 0, left: 0, right: 0, bottom: 20, overflow: 'hidden' as any },
+  lineDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.accent, borderWidth: 2, borderColor: Colors.white, zIndex: 1 },
   barGroup: { flex: 1, alignItems: 'center', gap: 4 },
   bars: { flexDirection: 'row', alignItems: 'flex-end', gap: 2, height: 150 },
   barWrapper: { alignItems: 'center', justifyContent: 'flex-end' },
