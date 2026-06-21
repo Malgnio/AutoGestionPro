@@ -10,11 +10,11 @@ type Insurance = {
   customer_name: string
   rut: string
   chassis: string
-  insurance_type: 'Light' | 'Plus' | 'Premium'
+  insurance_type: 'Light' | 'Plus' | 'Premium' | 'Usados'
   sale_month: string
 }
 
-const INSURANCE_TYPES = ['Light', 'Plus', 'Premium'] as const
+const INSURANCE_TYPES = ['Light', 'Plus', 'Premium', 'Usados'] as const
 const COMMISSION_PER_POLICY = 23000
 const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
 
@@ -22,6 +22,7 @@ const TYPE_COLOR: Record<string, string> = {
   Light: '#7F8C8D',
   Plus: Colors.secondary,
   Premium: '#8E44AD',
+  Usados: Colors.accent,
 }
 
 export default function InsuranceScreen() {
@@ -38,7 +39,7 @@ export default function InsuranceScreen() {
   const [customerName, setCustomerName] = useState('')
   const [rut, setRut] = useState('')
   const [chassis, setChassis] = useState('')
-  const [insuranceType, setInsuranceType] = useState<'Light' | 'Plus' | 'Premium'>('Premium')
+  const [insuranceType, setInsuranceType] = useState<'Light' | 'Plus' | 'Premium' | 'Usados'>('Premium')
 
   useEffect(() => { loadInsurance() }, [selectedYear, selectedMonth])
 
@@ -74,7 +75,7 @@ export default function InsuranceScreen() {
   }
 
   async function handleSave() {
-    if (!customerName || !rut || !chassis) {
+    if (!customerName || !rut || (insuranceType !== 'Usados' && !chassis)) {
       setError('Completa todos los campos')
       return
     }
