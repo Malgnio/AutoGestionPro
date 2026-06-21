@@ -109,7 +109,7 @@ export default function DashboardScreen() {
       ) : (
         <ScrollView style={styles.scrollArea} contentContainerStyle={styles.content}>
 
-          {/* Fila 1: KPIs ventas/créditos */}
+          {/* Fila única de KPIs */}
           <View style={styles.kpiRow}>
             <View style={[styles.kpiCard, { backgroundColor: Colors.secondary }]}>
               <Text style={styles.kpiLabel}>Unidades vendidas</Text>
@@ -127,25 +127,20 @@ export default function DashboardScreen() {
               <Text style={styles.kpiSub}>Meta: 50%</Text>
             </View>
             <View style={[styles.kpiCard, { backgroundColor: Colors.primary }]}>
-              <Text style={styles.kpiLabel}>Comisión anual</Text>
-              <Text style={styles.kpiValue}>${Math.round(totalCommission).toLocaleString('es-CL')}</Text>
-              <Text style={styles.kpiSub}>Créditos + VPP + MPP</Text>
-            </View>
-          </View>
-
-          {/* Fila 2: KPIs VPP y MPP */}
-          <View style={styles.kpiRow}>
-            <View style={[styles.kpiCard, { backgroundColor: Colors.primary, flex: 1 }]}>
               <Text style={styles.kpiLabel}>VPP en el año</Text>
               <Text style={styles.kpiValue}>{totalVpp}</Text>
-              <Text style={styles.kpiSub}>Comisión: ${totalVppCommission.toLocaleString('es-CL')}</Text>
+              <Text style={styles.kpiSub}>${totalVppCommission.toLocaleString('es-CL')} comisión</Text>
             </View>
-            <View style={[styles.kpiCard, { backgroundColor: '#2471A3', flex: 1 }]}>
+            <View style={[styles.kpiCard, { backgroundColor: '#2471A3' }]}>
               <Text style={styles.kpiLabel}>MPP en el año</Text>
               <Text style={styles.kpiValue}>${totalMppCommission.toLocaleString('es-CL')}</Text>
               <Text style={styles.kpiSub}>comisión acumulada</Text>
             </View>
-            <View style={{ flex: 2 }} />
+            <View style={[styles.kpiCard, { backgroundColor: '#1A252F' }]}>
+              <Text style={styles.kpiLabel}>Comisión anual</Text>
+              <Text style={[styles.kpiValue, { fontSize: 24 }]}>${Math.round(totalCommission).toLocaleString('es-CL')}</Text>
+              <Text style={styles.kpiSub}>Créditos + VPP + MPP</Text>
+            </View>
           </View>
 
           {/* Gráfico */}
