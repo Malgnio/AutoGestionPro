@@ -9,19 +9,23 @@ const NAV_ITEMS = [
   { label: 'Ventas', icon: '🚗', path: '/(tabs)/sales' },
   { label: 'Créditos', icon: '💳', path: '/(tabs)/credits' },
   { label: 'Comisiones', icon: '💰', path: '/(tabs)/commissions' },
+  { label: 'Usuarios', icon: '👥', path: '/(tabs)/users', adminOnly: true },
 ]
 
 export default function TabsLayout() {
   const router = useRouter()
   const pathname = usePathname()
   const [userName, setUserName] = useState('')
+  const [userRole, setUserRole] = useState('')
   const [collapsed, setCollapsed] = useState(false)
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (!user) return
-      supabase.from('profiles').select('full_name').eq('id', user.id).single()
-        .then(({ data }) => { if (data) setUserName(data.full_name) })
+      supabase.from('profiles').select('full_name, role').eq('id', user.id).single()
+        .then(({ data }) => {
+          if (data) { setUserName(data.full_name); setUserRole(data.role) }
+        })
     })
   }, [])
 
@@ -40,7 +44,7 @@ export default function TabsLayout() {
         )}
 
         <View style={styles.nav}>
-          {NAV_ITEMS.map(item => {
+          {NAV_ITEMS.filter(item => !item.adminOnly || userRole === 'admin').map(item => {
             const isActive = pathname === item.path.replace('/(tabs)', '')
             return (
               <TouchableOpacity
