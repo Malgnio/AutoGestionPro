@@ -30,8 +30,8 @@ export default function UsersScreen() {
   async function loadUsers() {
     setLoading(true)
     const { data } = await supabase
-      .from('profiles')
-      .select('id, full_name, role, created_at')
+      .from('profiles_with_email')
+      .select('id, full_name, role, created_at, email')
       .order('created_at', { ascending: false })
     setUsers(data ?? [])
     setLoading(false)
@@ -90,6 +90,7 @@ export default function UsersScreen() {
           <View style={styles.table}>
             <View style={[styles.tableRow, styles.tableHead]}>
               <Text style={[styles.cell, styles.cellName, styles.headCell]}>Nombre</Text>
+              <Text style={[styles.cell, styles.cellEmail, styles.headCell]}>Email</Text>
               <Text style={[styles.cell, styles.cellRole, styles.headCell]}>Rol</Text>
               <Text style={[styles.cell, styles.cellDate, styles.headCell]}>Creado</Text>
               <Text style={[styles.cell, styles.cellAction, styles.headCell]}></Text>
@@ -99,6 +100,7 @@ export default function UsersScreen() {
                 <View style={[styles.cell, styles.cellName]}>
                   <Text style={styles.userName}>{u.full_name || '—'}</Text>
                 </View>
+                <Text style={[styles.cell, styles.cellEmail, { color: Colors.textLight }]}>{u.email || '—'}</Text>
                 <View style={[styles.cell, styles.cellRole]}>
                   <TouchableOpacity
                     style={[styles.roleBadge, { backgroundColor: ROLE_COLOR[u.role] ?? Colors.secondary }]}
@@ -200,8 +202,9 @@ const styles = StyleSheet.create({
   rowOdd: { backgroundColor: '#F8F9FA' },
   cell: { fontSize: 13, color: Colors.text, paddingHorizontal: 6 },
   headCell: { color: Colors.white, fontWeight: 'bold', fontSize: 12 },
-  cellName: { flex: 2 },
-  cellRole: { width: 120 },
+  cellName: { flex: 1.5 },
+  cellEmail: { flex: 2, fontSize: 13 },
+  cellRole: { width: 110 },
   cellDate: { flex: 1, color: Colors.textLight, fontSize: 13 },
   cellAction: { width: 48, alignItems: 'flex-end' },
   userName: { fontSize: 14, color: Colors.text, fontWeight: '500' },
