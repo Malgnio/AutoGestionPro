@@ -47,12 +47,22 @@ const STATUS_DATE_LABEL: Record<string, string> = {
 
 const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
 
+const TODAY = new Date().toISOString().split('T')[0]
+
+function formatDateCL(dateStr: string | null): string {
+  if (!dateStr) return '—'
+  const d = dateStr.split('T')[0]
+  const [y, m, day] = d.split('-')
+  return `${day}/${m}/${y}`
+}
+
 function dateInput(value: string, onChange: (v: string) => void) {
   return (
     // @ts-ignore
     <input
       type="date"
       value={value}
+      max={TODAY}
       onChange={(e: any) => onChange(e.target.value)}
       style={{
         border: `1px solid ${Colors.border}`, borderRadius: 8,
@@ -270,7 +280,7 @@ export default function SalesScreen() {
                         )}
                       </View>
                       <Text style={[styles.cell, styles.cellDate, { color: Colors.textLight }]}>
-                        {statusDate ? statusDate.split('T')[0] : '—'}
+                        {formatDateCL(statusDate)}
                       </Text>
                       <View style={[styles.cell, styles.cellAction]}>
                         <TouchableOpacity onPress={() => openEdit(item)} style={styles.iconBtn}>
