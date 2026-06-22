@@ -319,12 +319,17 @@ export default function SalesScreen() {
           </View>
 
           <Text style={styles.label}>Fecha de Entrega</Text>
-          <TextInput
-            style={styles.input}
+          {/* @ts-ignore */}
+          <input
+            type="date"
             value={deliveryDate}
-            onChangeText={setDeliveryDate}
-            placeholderTextColor={Colors.textLight}
-            placeholder="YYYY-MM-DD"
+            onChange={(e: any) => setDeliveryDate(e.target.value)}
+            style={{
+              borderWidth: 1, borderColor: Colors.border, borderRadius: 8,
+              padding: 10, fontSize: 14, color: Colors.text,
+              fontFamily: 'inherit', width: '100%', boxSizing: 'border-box',
+              outline: 'none', border: `1px solid ${Colors.border}`,
+            } as any}
           />
         </ScrollView>
 
