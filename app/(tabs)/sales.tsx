@@ -14,7 +14,7 @@ type Sale = {
   odv: string
   purchase_type: 'R' | 'F' | 'FL' | 'SEG'
   sale_month: string
-  status: 'Solicitado' | 'Facturado' | 'Entregado'
+  status: 'Solicitado' | 'Facturado' | 'Entregado' | null
   requested_date: string | null
   invoiced_date: string | null
   delivery_date: string | null
@@ -66,7 +66,8 @@ function dateInput(value: string, onChange: (v: string) => void) {
 function getStatusDate(item: Sale): string | null {
   if (item.status === 'Solicitado') return item.requested_date
   if (item.status === 'Facturado') return item.invoiced_date
-  return item.delivery_date
+  if (item.status === 'Entregado') return item.delivery_date
+  return null
 }
 
 export default function SalesScreen() {
@@ -87,7 +88,7 @@ export default function SalesScreen() {
   const [chassis, setChassis] = useState('')
   const [odv, setOdv] = useState('')
   const [purchaseType, setPurchaseType] = useState<'R' | 'F' | 'FL' | 'SEG'>('R')
-  const [status, setStatus] = useState<'Solicitado' | 'Facturado' | 'Entregado'>('Solicitado')
+  const [status, setStatus] = useState<'Solicitado' | 'Facturado' | 'Entregado' | null>(null)
   const [requestedDate, setRequestedDate] = useState('')
   const [invoicedDate, setInvoicedDate] = useState('')
   const [deliveryDate, setDeliveryDate] = useState('')
@@ -117,7 +118,7 @@ export default function SalesScreen() {
 
   function resetForm() {
     setCustomerName(''); setRut(''); setModel(''); setChassis(''); setOdv('')
-    setPurchaseType('R'); setStatus('Solicitado')
+    setPurchaseType('R'); setStatus(null)
     setRequestedDate(''); setInvoicedDate(''); setDeliveryDate('')
     setError(''); setEditingId(null)
   }
@@ -130,7 +131,7 @@ export default function SalesScreen() {
     setChassis(item.chassis)
     setOdv(item.odv)
     setPurchaseType(item.purchase_type)
-    setStatus(item.status ?? 'Solicitado')
+    setStatus(item.status ?? null)
     setRequestedDate(item.requested_date ?? '')
     setInvoicedDate(item.invoiced_date ?? '')
     setDeliveryDate(item.delivery_date ?? '')
@@ -154,7 +155,7 @@ export default function SalesScreen() {
     const formattedRut = formatRut(rut)
     const payload = {
       customer_name: customerName, rut: formattedRut, model, chassis, odv,
-      purchase_type: purchaseType, status,
+      purchase_type: purchaseType, status: status || null,
       requested_date: requestedDate || null,
       invoiced_date: invoicedDate || null,
       delivery_date: deliveryDate || null,
@@ -260,9 +261,13 @@ export default function SalesScreen() {
                         </View>
                       </View>
                       <View style={[styles.cell, styles.cellStatus]}>
-                        <View style={[styles.badge, { backgroundColor: STATUS_COLOR[item.status ?? 'Solicitado'] }]}>
-                          <Text style={styles.badgeText}>{item.status ?? 'Solicitado'}</Text>
-                        </View>
+                        {item.status ? (
+                          <View style={[styles.badge, { backgroundColor: STATUS_COLOR[item.status] }]}>
+                            <Text style={styles.badgeText}>{item.status}</Text>
+                          </View>
+                        ) : (
+                          <Text style={{ color: Colors.textLight, fontSize: 13 }}>—</Text>
+                        )}
                       </View>
                       <Text style={[styles.cell, styles.cellDate, { color: Colors.textLight }]}>
                         {statusDate ? statusDate.split('T')[0] : '—'}
@@ -350,7 +355,7 @@ export default function SalesScreen() {
             <View key={s} style={styles.statusRow}>
               <TouchableOpacity
                 style={[styles.statusBtn, status === s && { backgroundColor: STATUS_COLOR[s], borderColor: STATUS_COLOR[s] }]}
-                onPress={() => setStatus(s)}
+                onPress={() => setStatus(status === s ? null : s)}
               >
                 <Text style={[styles.typeBtnText, status === s && styles.typeBtnTextActive]}>{s}</Text>
               </TouchableOpacity>
