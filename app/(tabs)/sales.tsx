@@ -124,7 +124,7 @@ export default function SalesScreen() {
     }
 
     if (editingId) {
-      const { error } = await supabase.from('sales').update(payload).eq('id', editingId).eq('user_id', user.id)
+      const { error } = await supabase.from('sales').update(payload).eq('id', editingId)
       setSaving(false)
       if (error) { setError(error.message) } else { setShowForm(false); resetForm(); loadSales() }
     } else {
