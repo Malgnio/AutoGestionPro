@@ -162,9 +162,9 @@ export default function SalesScreen() {
     }
 
     if (editingId) {
-      const { error } = await supabase.from('sales').update(payload).eq('id', editingId)
+      const { data, error } = await supabase.from('sales').update(payload).eq('id', editingId).select()
       setSaving(false)
-      if (error) { setError(error.message) } else { setShowForm(false); resetForm(); loadSales() }
+      if (error) { setError(error.message) } else if (!data || data.length === 0) { setError('No se actualizó ningún registro. Verifica permisos.') } else { setShowForm(false); resetForm(); loadSales() }
     } else {
       const saleMonth = new Date(selectedYear, selectedMonth, 1).toISOString().split('T')[0]
       const { error } = await supabase.from('sales').insert({ user_id: user.id, sale_month: saleMonth, ...payload })
