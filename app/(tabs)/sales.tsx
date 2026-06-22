@@ -72,7 +72,7 @@ export default function SalesScreen() {
     const end = new Date(selectedYear, selectedMonth + 1, 0).toISOString().split('T')[0]
 
     const [{ data }, { data: credits }] = await Promise.all([
-      supabase.from('sales').select('*').eq('user_id', user.id)
+      supabase.from('sales').select('id,customer_name,rut,model,chassis,odv,purchase_type,sale_month,status,delivery_date,created_at').eq('user_id', user.id)
         .gte('sale_month', start).lte('sale_month', end)
         .order('created_at', { ascending: true }),
       supabase.from('credits').select('id').eq('user_id', user.id)
@@ -114,7 +114,7 @@ export default function SalesScreen() {
     }
     setSaving(true)
     const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+    if (!user) { setSaving(false); return }
 
     const formattedRut = formatRut(rut)
     const payload = {
@@ -124,7 +124,7 @@ export default function SalesScreen() {
     }
 
     if (editingId) {
-      const { error } = await supabase.from('sales').update(payload).eq('id', editingId)
+      const { error } = await supabase.from('sales').update(payload).eq('id', editingId).eq('user_id', user.id)
       setSaving(false)
       if (error) { setError(error.message) } else { setShowForm(false); resetForm(); loadSales() }
     } else {
