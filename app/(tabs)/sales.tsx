@@ -360,7 +360,12 @@ export default function SalesScreen() {
             ))}
           </View>
 
-          <Text style={styles.label}>Estado y fechas</Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 14 }}>
+            <Text style={styles.label}>Estado y fechas</Text>
+            <TouchableOpacity onPress={() => { setStatus(null); setRequestedDate(''); setInvoicedDate(''); setDeliveryDate('') }}>
+              <Text style={{ fontSize: 12, color: Colors.textLight, textDecorationLine: 'underline' }}>Limpiar</Text>
+            </TouchableOpacity>
+          </View>
           {STATUSES.map(s => (
             <View key={s} style={styles.statusRow}>
               <TouchableOpacity
