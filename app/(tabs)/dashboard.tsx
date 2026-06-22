@@ -134,7 +134,7 @@ export default function DashboardScreen() {
           {/* Gráfico */}
           <View style={styles.chartCard}>
             <View style={styles.chartHeader}>
-              <Text style={styles.chartTitle}>Ventas y créditos por mes — {selectedYear}</Text>
+              <Text style={styles.chartTitle}>Actividad mensual — {selectedYear}</Text>
               <View style={styles.legend}>
                 <View style={styles.legendItem}>
                   <View style={[styles.legendDot, { backgroundColor: Colors.secondary }]} />
