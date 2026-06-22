@@ -49,14 +49,14 @@ hooks/useAuth.ts
 ```
 
 ## Datos que maneja
-- **Ventas**: Cliente, RUT, Modelo, Chasis, OdV, Tipo (R=Retail, F=Flota, FL=Fleet)
+- **Ventas**: Cliente, RUT, Modelo, Chasis, OdV, Tipo (R=Retail, F=Flota, FL=Fleet, SEG=Seguro), Estado (nullable), Fec. Solicitado, Fec. Facturado, Fec. Entregado
 - **Créditos**: Cliente, RUT, C.Dealer (monto), Tipo (CI=Crédito Inteligente, CC=Crédito Convencional)
 - **Seguros**: Cliente, RUT, Chasis, Tipo (Light, Plus, Premium, Usados)
 - **VPP**: Cliente, RUT, Chasis, PPU
 - **MPP**: Cliente, RUT, Chasis, Tipo (Platinium, Diamond, Zafiro)
 
 ## Tablas Supabase
-- `sales` — ventas
+- `sales` — ventas (status nullable, requested_date, invoiced_date, delivery_date)
 - `credits` — créditos (credit_type: 'CI' | 'CC')
 - `insurance` — seguros
 - `vpp` — vehículos en parte de pago
@@ -66,6 +66,7 @@ hooks/useAuth.ts
 - `bonuses` — bonos por usuario y mes (descripción + monto)
 
 Todas las tablas tienen RLS habilitado con política `auth.uid() = user_id`.
+**IMPORTANTE**: La tabla `sales` requiere política UPDATE explícita — ya creada: "Vendedor actualiza sus ventas".
 
 ## Tablas de comisión
 **Ventas** ($70.000 por unidad):
@@ -116,11 +117,21 @@ transform: [{ translateX: 0 }]    // abierto
 transition: 'transform 0.3s ease'
 ```
 
+## Ventas — Estado y fechas
+- `status`: nullable (sin default). Valores: 'Solicitado' | 'Facturado' | 'Entregado' | null
+- Cada estado tiene su propia fecha: `requested_date`, `invoiced_date`, `delivery_date`
+- La columna "Fecha" en la tabla muestra la fecha del estado activo
+- Formato fecha en tabla: DD/MM/YYYY. Input con `max=hoy` (no permite fechas futuras)
+- Botón "Limpiar" en drawer resetea estado y las 3 fechas a null
+
 ## Usuarios del sistema
-- **Enrique Cisternas** (enrique.cisternasm@gmail.com) — cuenta de prueba original
-- **Franco Parodi** (fparodit@gmail.com) — vendedor con datos copiados desde Enrique
+- **Enrique Cisternas** (enrique.cisternasm@gmail.com) — cuenta sin datos (se movieron a Franco)
+- **Franco Parodi** (fparodit@gmail.com) — vendedor activo, user_id: 9dfe6d4a-81f3-44df-a8e3-5907368feab3
 - **Luis Cisternas** (lcistern@emeal.nttdata.com) — admin
 
+## Versión
+- **v1.0.0** — Release oficial inicial (tag en GitHub, 2026-06-21)
+
 ## Pendiente
-- Reasignar datos de Enrique a su cuenta propia una vez que tenga acceso
+- Verificar políticas UPDATE en otras tablas (credits, insurance, vpp, mpp) — sales ya tiene la suya
 - Perfil gerente con vista consolidada (futuro)
