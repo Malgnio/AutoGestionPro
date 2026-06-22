@@ -14,6 +14,8 @@ type Sale = {
   odv: string
   purchase_type: 'R' | 'F' | 'FL' | 'SEG'
   sale_month: string
+  status: 'Solicitado' | 'Facturado' | 'Entregado'
+  delivery_date: string | null
 }
 
 const SALES_COMMISSION = [
@@ -28,6 +30,14 @@ function getSalesRate(u: number) { return SALES_COMMISSION.find(r => u >= r.min 
 const PURCHASE_TYPES = ['R', 'F', 'FL', 'SEG'] as const
 const PURCHASE_TYPE_LABEL: Record<string, string> = { R: 'Retail', F: 'Flota', FL: 'Fleet', SEG: 'Seguro' }
 const BADGE_COLOR: Record<string, string> = { R: '#2E86C1', F: '#2E86C1', FL: '#1B4F72', SEG: '#8E44AD' }
+
+const STATUSES = ['Solicitado', 'Facturado', 'Entregado'] as const
+const STATUS_COLOR: Record<string, string> = {
+  Solicitado: '#E67E22',
+  Facturado: '#2471A3',
+  Entregado: '#1E8449',
+}
+
 const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
 
 export default function SalesScreen() {
@@ -48,6 +58,8 @@ export default function SalesScreen() {
   const [chassis, setChassis] = useState('')
   const [odv, setOdv] = useState('')
   const [purchaseType, setPurchaseType] = useState<'R' | 'F' | 'FL' | 'SEG'>('R')
+  const [status, setStatus] = useState<'Solicitado' | 'Facturado' | 'Entregado'>('Solicitado')
+  const [deliveryDate, setDeliveryDate] = useState('')
 
   useEffect(() => { loadSales() }, [selectedYear, selectedMonth])
 
@@ -73,7 +85,8 @@ export default function SalesScreen() {
   }
 
   function resetForm() {
-    setCustomerName(''); setRut(''); setModel(''); setChassis(''); setOdv(''); setPurchaseType('R'); setError(''); setEditingId(null)
+    setCustomerName(''); setRut(''); setModel(''); setChassis(''); setOdv('')
+    setPurchaseType('R'); setStatus('Solicitado'); setDeliveryDate(''); setError(''); setEditingId(null)
   }
 
   function openEdit(item: Sale) {
@@ -84,6 +97,8 @@ export default function SalesScreen() {
     setChassis(item.chassis)
     setOdv(item.odv)
     setPurchaseType(item.purchase_type)
+    setStatus(item.status ?? 'Solicitado')
+    setDeliveryDate(item.delivery_date ?? '')
     setError('')
     setShowForm(true)
   }
@@ -102,19 +117,19 @@ export default function SalesScreen() {
     if (!user) return
 
     const formattedRut = formatRut(rut)
+    const payload = {
+      customer_name: customerName, rut: formattedRut, model, chassis, odv,
+      purchase_type: purchaseType, status,
+      delivery_date: deliveryDate || null,
+    }
 
     if (editingId) {
-      const { error } = await supabase.from('sales').update({
-        customer_name: customerName, rut: formattedRut, model, chassis, odv, purchase_type: purchaseType,
-      }).eq('id', editingId)
+      const { error } = await supabase.from('sales').update(payload).eq('id', editingId)
       setSaving(false)
       if (error) { setError(error.message) } else { setShowForm(false); resetForm(); loadSales() }
     } else {
       const saleMonth = new Date(selectedYear, selectedMonth, 1).toISOString().split('T')[0]
-      const { error } = await supabase.from('sales').insert({
-        user_id: user.id, customer_name: customerName, rut: formattedRut, model, chassis, odv,
-        purchase_type: purchaseType, sale_month: saleMonth,
-      })
+      const { error } = await supabase.from('sales').insert({ user_id: user.id, sale_month: saleMonth, ...payload })
       setSaving(false)
       if (error) { setError(error.message) } else { setShowForm(false); resetForm(); loadSales() }
     }
@@ -188,6 +203,8 @@ export default function SalesScreen() {
                   <Text style={[styles.cell, styles.cellChassis, styles.headCell]}>Chasis</Text>
                   <Text style={[styles.cell, styles.cellOdv, styles.headCell]}>OdV</Text>
                   <Text style={[styles.cell, styles.cellType, styles.headCell]}>Tipo</Text>
+                  <Text style={[styles.cell, styles.cellStatus, styles.headCell]}>Estado</Text>
+                  <Text style={[styles.cell, styles.cellDate, styles.headCell]}>Fec. Entrega</Text>
                   <Text style={[styles.cell, styles.cellAction, styles.headCell]}></Text>
                 </View>
                 {sales.map((item, index) => (
@@ -203,6 +220,14 @@ export default function SalesScreen() {
                         <Text style={styles.badgeText}>{item.purchase_type}</Text>
                       </View>
                     </View>
+                    <View style={[styles.cell, styles.cellStatus]}>
+                      <View style={[styles.badge, { backgroundColor: STATUS_COLOR[item.status ?? 'Solicitado'] }]}>
+                        <Text style={styles.badgeText}>{item.status ?? 'Solicitado'}</Text>
+                      </View>
+                    </View>
+                    <Text style={[styles.cell, styles.cellDate, { color: Colors.textLight }]}>
+                      {item.delivery_date ? item.delivery_date.split('T')[0] : '—'}
+                    </Text>
                     <View style={[styles.cell, styles.cellAction]}>
                       <TouchableOpacity onPress={() => openEdit(item)} style={styles.iconBtn}>
                         <Text style={styles.iconEdit}>✏️</Text>
@@ -279,6 +304,28 @@ export default function SalesScreen() {
               </TouchableOpacity>
             ))}
           </View>
+
+          <Text style={styles.label}>Estado</Text>
+          <View style={styles.typeRow}>
+            {STATUSES.map(s => (
+              <TouchableOpacity
+                key={s}
+                style={[styles.typeBtn, status === s && { backgroundColor: STATUS_COLOR[s], borderColor: STATUS_COLOR[s] }]}
+                onPress={() => setStatus(s)}
+              >
+                <Text style={[styles.typeBtnText, status === s && styles.typeBtnTextActive]}>{s}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <Text style={styles.label}>Fecha de Entrega</Text>
+          <TextInput
+            style={styles.input}
+            value={deliveryDate}
+            onChangeText={setDeliveryDate}
+            placeholderTextColor={Colors.textLight}
+            placeholder="YYYY-MM-DD"
+          />
         </ScrollView>
 
         <View style={styles.drawerFooter}>
@@ -318,22 +365,21 @@ const styles = StyleSheet.create({
   cellN: { width: 32 },
   cellName: { flex: 2 },
   cellRut: { flex: 1.2 },
-  cellModel: { flex: 2.2 },
-  cellChassis: { flex: 2 },
+  cellModel: { flex: 2 },
+  cellChassis: { flex: 1.8 },
   cellOdv: { flex: 1 },
-  cellType: { width: 70 },
+  cellType: { width: 60 },
+  cellStatus: { width: 90 },
+  cellDate: { width: 90 },
   cellAction: { width: 72, flexDirection: 'row', justifyContent: 'flex-end', gap: 4 },
-  badge: { backgroundColor: Colors.secondary, borderRadius: 4, paddingHorizontal: 8, paddingVertical: 2, alignSelf: 'flex-start' },
+  badge: { backgroundColor: Colors.secondary, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2, alignSelf: 'flex-start' },
   badgeText: { color: Colors.white, fontSize: 11, fontWeight: '600' },
   iconBtn: { padding: 6, borderRadius: 6, backgroundColor: '#F0F3F6' },
   iconEdit: { fontSize: 14 },
   iconDelete: { fontSize: 14 },
   empty: { alignItems: 'center', padding: 60 },
   emptyText: { color: Colors.textLight, fontSize: 15 },
-  overlay: {
-    position: 'fixed' as any, top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.3)', zIndex: 100,
-  },
+  overlay: { position: 'fixed' as any, top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.3)', zIndex: 100 },
   drawer: {
     position: 'fixed' as any, top: 0, right: 0, bottom: 0,
     width: 460, backgroundColor: Colors.white,
@@ -342,10 +388,7 @@ const styles = StyleSheet.create({
     transition: 'transform 0.3s ease',
   } as any,
   drawerOpen: { transform: [{ translateX: 0 }] },
-  drawerHeader: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start',
-    padding: 24, borderBottomWidth: 1, borderBottomColor: Colors.border,
-  },
+  drawerHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', padding: 24, borderBottomWidth: 1, borderBottomColor: Colors.border },
   drawerTitle: { fontSize: 18, fontWeight: 'bold', color: Colors.text },
   drawerSub: { fontSize: 13, color: Colors.textLight, marginTop: 2 },
   closeBtn: { fontSize: 18, color: Colors.textLight, padding: 4 },
@@ -356,7 +399,7 @@ const styles = StyleSheet.create({
   input: { borderWidth: 1, borderColor: Colors.border, borderRadius: 8, padding: 10, fontSize: 14, color: Colors.text, outlineStyle: 'none' } as any,
   inputError: { borderColor: Colors.danger },
   fieldError: { fontSize: 12, color: Colors.danger, marginTop: 4 },
-  typeRow: { flexDirection: 'row', gap: 8, marginTop: 4 },
+  typeRow: { flexDirection: 'row', gap: 8, marginTop: 4, flexWrap: 'wrap' },
   typeBtn: { flex: 1, padding: 10, borderRadius: 6, borderWidth: 1, borderColor: Colors.border, alignItems: 'center' },
   typeBtnActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
   typeBtnText: { color: Colors.textLight, fontSize: 13, fontWeight: '600' },
