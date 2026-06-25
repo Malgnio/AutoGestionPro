@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity
 import { supabase } from '../../lib/supabase'
 import { Colors } from '../../constants/colors'
 import { usePeriod } from '../../contexts/PeriodContext'
+import AlertBell from '../../components/AlertBell'
 
 const SALES_COMMISSION = [
   { min: 15, max: Infinity, rate: 0.12 },
@@ -89,12 +90,15 @@ export default function DashboardScreen() {
     <View style={styles.container}>
       <View style={styles.topBar}>
         <Text style={styles.pageTitle}>Resumen Anual</Text>
-        <View style={styles.yearRow}>
-          {YEARS.map(y => (
-            <TouchableOpacity key={y} style={[styles.yearBtn, selectedYear === y && styles.yearBtnActive]} onPress={() => setSelectedYear(y)}>
-              <Text style={[styles.yearBtnText, selectedYear === y && styles.yearBtnTextActive]}>{y}</Text>
-            </TouchableOpacity>
-          ))}
+        <View style={styles.topBarRight}>
+          <View style={styles.yearRow}>
+            {YEARS.map(y => (
+              <TouchableOpacity key={y} style={[styles.yearBtn, selectedYear === y && styles.yearBtnActive]} onPress={() => setSelectedYear(y)}>
+                <Text style={[styles.yearBtnText, selectedYear === y && styles.yearBtnTextActive]}>{y}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <AlertBell />
         </View>
       </View>
 
@@ -235,6 +239,7 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 32, paddingBottom: 16 },
+  topBarRight: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   pageTitle: { fontSize: 24, fontWeight: 'bold', color: Colors.text },
   yearRow: { flexDirection: 'row', gap: 8 },
   yearBtn: { paddingHorizontal: 16, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.white },

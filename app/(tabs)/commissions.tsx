@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity
 import { supabase } from '../../lib/supabase'
 import { Colors } from '../../constants/colors'
 import { usePeriod } from '../../contexts/PeriodContext'
+import AlertBell from '../../components/AlertBell'
 
 const SALES_COMMISSION = [
   { min: 15, max: Infinity, rate: 0.12, label: '15 o más' },
@@ -135,6 +136,7 @@ export default function CommissionsScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.pageTitle}>Sueldo {selectedYear}</Text>
+        <AlertBell />
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.monthScroll} contentContainerStyle={styles.monthContainer}>
@@ -326,7 +328,7 @@ export default function CommissionsScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  header: { padding: 32, paddingBottom: 16 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 32, paddingBottom: 16 },
   pageTitle: { fontSize: 24, fontWeight: 'bold', color: Colors.text },
   monthScroll: { maxHeight: 52, paddingLeft: 32 },
   monthContainer: { paddingRight: 32, paddingVertical: 10, gap: 8 },

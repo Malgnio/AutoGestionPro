@@ -5,6 +5,7 @@ import { Colors } from '../../constants/colors'
 import PeriodSelector from '../../components/PeriodSelector'
 import { usePeriod } from '../../contexts/PeriodContext'
 import ClientSearch from '../../components/ClientSearch'
+import AlertBell from '../../components/AlertBell'
 import { validateRut, formatRut } from '../../lib/validateRut'
 
 type VPP = {
@@ -90,9 +91,12 @@ export default function VPPScreen() {
       <View style={styles.main}>
         <View style={styles.header}>
           <Text style={styles.pageTitle}>VPP — {MONTHS[selectedMonth]} {selectedYear}</Text>
-          <TouchableOpacity style={styles.addButton} onPress={() => { resetForm(); setShowForm(true) }}>
-            <Text style={styles.addButtonText}>+ Agregar VPP</Text>
-          </TouchableOpacity>
+          <View style={styles.headerActions}>
+            <AlertBell />
+            <TouchableOpacity style={styles.addButton} onPress={() => { resetForm(); setShowForm(true) }}>
+              <Text style={styles.addButtonText}>+ Agregar VPP</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         <PeriodSelector
@@ -219,6 +223,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, flexDirection: 'row', backgroundColor: Colors.background, overflow: 'hidden' },
   main: { flex: 1 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 32, paddingBottom: 16 },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   pageTitle: { fontSize: 24, fontWeight: 'bold', color: Colors.text },
   addButton: { backgroundColor: Colors.primary, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8 },
   addButtonText: { color: Colors.white, fontWeight: 'bold', fontSize: 14 },
