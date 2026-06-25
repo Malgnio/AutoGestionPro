@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native'
+import { createPortal } from 'react-dom'
 import { supabase } from '../lib/supabase'
 import { Colors } from '../constants/colors'
 import { usePeriod } from '../contexts/PeriodContext'
@@ -37,6 +38,8 @@ export default function AlertBell() {
   const [alerts, setAlerts] = useState<AlertItem[]>([])
   const [showAlerts, setShowAlerts] = useState(false)
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const bellRef = useRef<View>(null)
+  const [panelPos, setPanelPos] = useState({ top: 72, right: 24 })
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -47,6 +50,17 @@ export default function AlertBell() {
   useEffect(() => {
     if (currentUserId) loadAlerts(currentUserId, selectedMonth, selectedYear)
   }, [currentUserId, selectedMonth, selectedYear])
+
+  function openPanel() {
+    // Measure bell position to anchor panel below it
+    if (bellRef.current) {
+      ;(bellRef.current as any).measure((_x: number, _y: number, w: number, h: number, px: number, py: number) => {
+        const right = window.innerWidth - px - w
+        setPanelPos({ top: py + h + 8, right: Math.max(right, 8) })
+      })
+    }
+    setShowAlerts(v => !v)
+  }
 
   async function loadAlerts(userId: string, month: number, year: number) {
     const start = new Date(year, month, 1).toISOString().split('T')[0]
@@ -96,9 +110,78 @@ export default function AlertBell() {
 
   const pendingCount = alerts.filter(a => !a.gestioned).length
 
+  const panel = showAlerts ? createPortal(
+    <>
+      {/* Invisible overlay to close on outside click */}
+      <div
+        onClick={() => setShowAlerts(false)}
+        style={{ position: 'fixed', inset: 0, zIndex: 9000 }}
+      />
+      <div style={{
+        position: 'fixed',
+        top: panelPos.top,
+        right: panelPos.right,
+        width: 340,
+        maxHeight: 480,
+        backgroundColor: Colors.white,
+        borderRadius: 12,
+        zIndex: 9001,
+        boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+        border: `1px solid ${Colors.border}`,
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden',
+      }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: 16, borderBottom: `1px solid ${Colors.border}` }}>
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 'bold', color: Colors.text }}>🔔 Alertas</div>
+            <div style={{ fontSize: 12, color: Colors.textLight, marginTop: 2 }}>{MONTHS_FULL[selectedMonth]} {selectedYear}</div>
+          </div>
+          <button onClick={() => setShowAlerts(false)} style={{ background: 'none', border: 'none', fontSize: 16, color: Colors.textLight, cursor: 'pointer', padding: 4 }}>✕</button>
+        </div>
+        <div style={{ overflowY: 'auto', flex: 1 }}>
+          {alerts.length === 0 ? (
+            <div style={{ color: Colors.textLight, fontSize: 14, padding: 16, textAlign: 'center' }}>
+              Sin alertas en {MONTHS_FULL[selectedMonth]}
+            </div>
+          ) : (
+            alerts.map(a => (
+              <div key={a.id} style={{ display: 'flex', gap: 10, padding: 12, borderBottom: '1px solid #F0F0F0', alignItems: 'center', opacity: a.gestioned ? 0.5 : 1 }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: Colors.text, marginBottom: 2, textDecoration: a.gestioned ? 'line-through' : 'none' }}>
+                    Llamar a cliente por compra realizada
+                  </div>
+                  <div style={{ fontSize: 13, color: Colors.text, fontWeight: 500, textDecoration: a.gestioned ? 'line-through' : 'none' }}>{a.customer_name}</div>
+                  <div style={{ fontSize: 12, color: Colors.textLight }}>{a.model}</div>
+                  <div style={{ fontSize: 11, color: Colors.danger, marginTop: 2 }}>
+                    Entregado: {formatDateCL(a.delivery_date)} · {a.daysElapsed} días hábiles
+                  </div>
+                </div>
+                <button
+                  onClick={() => a.gestioned ? handleUndoGestion(a.id) : handleGestion(a.id)}
+                  style={{
+                    width: 32, height: 32, borderRadius: 16,
+                    border: `2px solid ${a.gestioned ? Colors.success : Colors.border}`,
+                    backgroundColor: a.gestioned ? Colors.success : 'transparent',
+                    cursor: 'pointer', fontSize: 16,
+                    color: a.gestioned ? Colors.white : Colors.textLight,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}
+                >
+                  {a.gestioned ? '✓' : '○'}
+                </button>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </>,
+    document.body
+  ) : null
+
   return (
-    <View>
-      <TouchableOpacity style={styles.bellBtn} onPress={() => setShowAlerts(v => !v)}>
+    <View ref={bellRef}>
+      <TouchableOpacity style={styles.bellBtn} onPress={openPanel}>
         <Text style={styles.bellIcon}>🔔</Text>
         {pendingCount > 0 && (
           <View style={styles.badgeView}>
@@ -106,52 +189,7 @@ export default function AlertBell() {
           </View>
         )}
       </TouchableOpacity>
-
-      {showAlerts && (
-        <>
-          {/* @ts-ignore */}
-          <TouchableOpacity style={styles.overlay} onPress={() => setShowAlerts(false)} activeOpacity={1} />
-          <View style={styles.panel}>
-            <View style={styles.panelHeader}>
-              <View>
-                <Text style={styles.panelTitle}>🔔 Alertas</Text>
-                <Text style={styles.panelSub}>{MONTHS_FULL[selectedMonth]} {selectedYear}</Text>
-              </View>
-              <TouchableOpacity onPress={() => setShowAlerts(false)}>
-                <Text style={styles.closeBtn}>✕</Text>
-              </TouchableOpacity>
-            </View>
-            <ScrollView style={styles.list} showsVerticalScrollIndicator={false}>
-              {alerts.length === 0 ? (
-                <Text style={styles.emptyText}>Sin alertas en {MONTHS_FULL[selectedMonth]}</Text>
-              ) : (
-                alerts.map(a => (
-                  <View key={a.id} style={[styles.item, a.gestioned && styles.itemDone]}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.itemTitle, a.gestioned && styles.textDone]}>
-                        Llamar a cliente por compra realizada
-                      </Text>
-                      <Text style={[styles.itemName, a.gestioned && styles.textDone]}>{a.customer_name}</Text>
-                      <Text style={styles.itemSub}>{a.model}</Text>
-                      <Text style={styles.itemDate}>
-                        Entregado: {formatDateCL(a.delivery_date)} · {a.daysElapsed} días hábiles
-                      </Text>
-                    </View>
-                    <TouchableOpacity
-                      style={[styles.checkBtn, a.gestioned && styles.checkBtnDone]}
-                      onPress={() => a.gestioned ? handleUndoGestion(a.id) : handleGestion(a.id)}
-                    >
-                      <Text style={[styles.checkIcon, a.gestioned && styles.checkIconDone]}>
-                        {a.gestioned ? '✓' : '○'}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                ))
-              )}
-            </ScrollView>
-          </View>
-        </>
-      )}
+      {panel}
     </View>
   )
 }
@@ -168,31 +206,4 @@ const styles = StyleSheet.create({
     minWidth: 16, height: 16, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3,
   },
   badgeText: { color: Colors.white, fontSize: 10, fontWeight: 'bold' },
-  overlay: { position: 'fixed' as any, top: 0, left: 0, right: 0, bottom: 0, zIndex: 500 },
-  panel: {
-    position: 'fixed' as any, top: 72, right: 24, width: 340,
-    backgroundColor: Colors.white, borderRadius: 12, zIndex: 501,
-    shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 24,
-    borderWidth: 1, borderColor: Colors.border, maxHeight: 480,
-  },
-  panelHeader: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start',
-    padding: 16, borderBottomWidth: 1, borderBottomColor: Colors.border,
-  },
-  panelTitle: { fontSize: 15, fontWeight: 'bold', color: Colors.text },
-  panelSub: { fontSize: 12, color: Colors.textLight, marginTop: 2 },
-  closeBtn: { fontSize: 16, color: Colors.textLight, padding: 4 },
-  list: { padding: 8, maxHeight: 380 },
-  emptyText: { color: Colors.textLight, fontSize: 14, padding: 16, textAlign: 'center' },
-  item: { flexDirection: 'row', gap: 10, padding: 12, borderBottomWidth: 1, borderBottomColor: '#F0F0F0', alignItems: 'center' },
-  itemDone: { opacity: 0.5 },
-  itemTitle: { fontSize: 12, fontWeight: '600', color: Colors.text, marginBottom: 2 },
-  itemName: { fontSize: 13, color: Colors.text, fontWeight: '500' },
-  itemSub: { fontSize: 12, color: Colors.textLight },
-  itemDate: { fontSize: 11, color: Colors.danger, marginTop: 2 },
-  textDone: { textDecorationLine: 'line-through', color: Colors.textLight },
-  checkBtn: { width: 32, height: 32, borderRadius: 16, borderWidth: 2, borderColor: Colors.border, alignItems: 'center', justifyContent: 'center' },
-  checkBtnDone: { backgroundColor: Colors.success, borderColor: Colors.success },
-  checkIcon: { fontSize: 16, color: Colors.textLight },
-  checkIconDone: { color: Colors.white, fontWeight: 'bold' },
 })
