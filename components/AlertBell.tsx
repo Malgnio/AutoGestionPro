@@ -168,11 +168,11 @@ const styles = StyleSheet.create({
     minWidth: 16, height: 16, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 3,
   },
   badgeText: { color: Colors.white, fontSize: 10, fontWeight: 'bold' },
-  overlay: { position: 'fixed' as any, top: 0, left: 0, right: 0, bottom: 0, zIndex: 200 },
+  overlay: { position: 'fixed' as any, top: 0, left: 0, right: 0, bottom: 0, zIndex: 500 },
   panel: {
-    position: 'absolute' as any, top: 48, right: 0, width: 340,
-    backgroundColor: Colors.white, borderRadius: 12, zIndex: 201,
-    shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 20,
+    position: 'fixed' as any, top: 72, right: 24, width: 340,
+    backgroundColor: Colors.white, borderRadius: 12, zIndex: 501,
+    shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: 24,
     borderWidth: 1, borderColor: Colors.border, maxHeight: 480,
   },
   panelHeader: {
