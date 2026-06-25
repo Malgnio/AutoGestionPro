@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native'
 import { supabase } from '../../lib/supabase'
 import { Colors } from '../../constants/colors'
+import { usePeriod } from '../../contexts/PeriodContext'
 
 const SALES_COMMISSION = [
   { min: 15, max: Infinity, rate: 0.12 },
@@ -37,7 +38,7 @@ type MonthData = {
 }
 
 export default function DashboardScreen() {
-  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
+  const { selectedYear, setSelectedYear } = usePeriod()
   const [loading, setLoading] = useState(true)
   const [monthData, setMonthData] = useState<MonthData[]>(Array(12).fill({ sales: 0, credits: 0, dealer: 0, vpp: 0, mppCommission: 0, mppCount: 0 }))
   const [hoveredMonth, setHoveredMonth] = useState<number | null>(null)

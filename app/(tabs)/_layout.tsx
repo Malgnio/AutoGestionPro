@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-nati
 import { Slot, useRouter, usePathname } from 'expo-router'
 import { Colors } from '../../constants/colors'
 import { supabase } from '../../lib/supabase'
+import { PeriodProvider, usePeriod } from '../../contexts/PeriodContext'
 
 const NAV_ITEMS = [
   { label: 'Resumen', icon: '📊', path: '/(tabs)/dashboard' },
@@ -15,7 +16,6 @@ const NAV_ITEMS = [
   { label: 'Usuarios', icon: '👥', path: '/(tabs)/users', adminOnly: true },
 ]
 
-const MONTHS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
 const MONTHS_FULL = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
 
 type AlertItem = {
@@ -44,17 +44,15 @@ function formatDateCL(dateStr: string): string {
   return `${d}/${m}/${y}`
 }
 
-export default function TabsLayout() {
+function SidebarContent() {
   const router = useRouter()
   const pathname = usePathname()
+  const { selectedYear, selectedMonth } = usePeriod()
   const [userName, setUserName] = useState('')
   const [userRole, setUserRole] = useState('')
   const [collapsed, setCollapsed] = useState(false)
   const [alerts, setAlerts] = useState<AlertItem[]>([])
   const [showAlerts, setShowAlerts] = useState(false)
-  const now = new Date()
-  const [alertMonth, setAlertMonth] = useState(now.getMonth())
-  const [alertYear] = useState(now.getFullYear())
   const [currentUserId, setCurrentUserId] = useState<string | null>(null)
 
   useEffect(() => {
@@ -69,8 +67,8 @@ export default function TabsLayout() {
   }, [])
 
   useEffect(() => {
-    if (currentUserId) loadAlerts(currentUserId, alertMonth, alertYear)
-  }, [currentUserId, alertMonth, alertYear])
+    if (currentUserId) loadAlerts(currentUserId, selectedMonth, selectedYear)
+  }, [currentUserId, selectedMonth, selectedYear])
 
   async function loadAlerts(userId: string, month: number, year: number) {
     const start = new Date(year, month, 1).toISOString().split('T')[0]
@@ -100,11 +98,7 @@ export default function TabsLayout() {
       deliveryDate.setHours(0, 0, 0, 0)
       const bizDays = countBusinessDays(deliveryDate, today)
       if (bizDays >= 3) {
-        items.push({
-          ...sale,
-          daysElapsed: bizDays,
-          gestioned: gestionedIds.has(sale.id),
-        })
+        items.push({ ...sale, daysElapsed: bizDays, gestioned: gestionedIds.has(sale.id) })
       }
     }
     setAlerts(items)
@@ -156,16 +150,14 @@ export default function TabsLayout() {
               >
                 <Text style={styles.navIcon}>{item.icon}</Text>
                 {!collapsed && (
-                  <Text style={[styles.navLabel, isActive && styles.navLabelActive]}>
-                    {item.label}
-                  </Text>
+                  <Text style={[styles.navLabel, isActive && styles.navLabelActive]}>{item.label}</Text>
                 )}
               </TouchableOpacity>
             )
           })}
         </View>
 
-        {/* Campana de alertas */}
+        {/* Campana */}
         <TouchableOpacity
           style={[styles.bellBtn, collapsed && styles.bellBtnCollapsed]}
           onPress={() => setShowAlerts(v => !v)}
@@ -198,35 +190,18 @@ export default function TabsLayout() {
         <>
           <TouchableOpacity style={styles.alertOverlay} onPress={() => setShowAlerts(false)} activeOpacity={1} />
           <View style={[styles.alertPanel, { left: collapsed ? SIDEBAR_COLLAPSED_W + 8 : SIDEBAR_W + 8 }]}>
-            {/* Header */}
             <View style={styles.alertHeader}>
-              <Text style={styles.alertTitle}>🔔 Alertas</Text>
+              <View>
+                <Text style={styles.alertTitle}>🔔 Alertas</Text>
+                <Text style={styles.alertMonthLabel}>{MONTHS_FULL[selectedMonth]} {selectedYear}</Text>
+              </View>
               <TouchableOpacity onPress={() => setShowAlerts(false)}>
                 <Text style={styles.alertClose}>✕</Text>
               </TouchableOpacity>
             </View>
-
-            {/* Selector de mes */}
-            <View style={styles.monthSelector}>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 4 }}>
-                {MONTHS.map((m, i) => (
-                  <TouchableOpacity
-                    key={i}
-                    style={[styles.monthBtn, alertMonth === i && styles.monthBtnActive]}
-                    onPress={() => setAlertMonth(i)}
-                  >
-                    <Text style={[styles.monthBtnText, alertMonth === i && styles.monthBtnTextActive]}>{m}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
-
-            <Text style={styles.alertMonthLabel}>{MONTHS_FULL[alertMonth]} {alertYear}</Text>
-
-            {/* Lista */}
             <ScrollView style={styles.alertList} showsVerticalScrollIndicator={false}>
               {alerts.length === 0 ? (
-                <Text style={styles.alertEmpty}>Sin alertas en {MONTHS_FULL[alertMonth]}</Text>
+                <Text style={styles.alertEmpty}>Sin alertas en {MONTHS_FULL[selectedMonth]}</Text>
               ) : (
                 alerts.map(a => (
                   <View key={a.id} style={[styles.alertItem, a.gestioned && styles.alertItemDone]}>
@@ -256,7 +231,7 @@ export default function TabsLayout() {
         </>
       )}
 
-      {/* Botón toggle */}
+      {/* Toggle */}
       <TouchableOpacity
         style={[styles.toggleBtn, { left: (collapsed ? SIDEBAR_COLLAPSED_W : SIDEBAR_W) - 14 }]}
         onPress={() => setCollapsed(c => !c)}
@@ -268,6 +243,14 @@ export default function TabsLayout() {
         <Slot />
       </View>
     </View>
+  )
+}
+
+export default function TabsLayout() {
+  return (
+    <PeriodProvider>
+      <SidebarContent />
+    </PeriodProvider>
   )
 }
 
@@ -322,16 +305,11 @@ const styles = StyleSheet.create({
     shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 20,
     borderWidth: 1, borderColor: Colors.border, maxHeight: 520,
   },
-  alertHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: Colors.border },
+  alertHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', padding: 16, borderBottomWidth: 1, borderBottomColor: Colors.border },
   alertTitle: { fontSize: 15, fontWeight: 'bold', color: Colors.text },
+  alertMonthLabel: { fontSize: 12, color: Colors.textLight, marginTop: 2 },
   alertClose: { fontSize: 16, color: Colors.textLight, padding: 4 },
-  monthSelector: { paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: Colors.border },
-  monthBtn: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6, borderWidth: 1, borderColor: Colors.border },
-  monthBtnActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  monthBtnText: { fontSize: 12, color: Colors.textLight, fontWeight: '500' },
-  monthBtnTextActive: { color: Colors.white },
-  alertMonthLabel: { fontSize: 12, color: Colors.textLight, paddingHorizontal: 16, paddingTop: 8 },
-  alertList: { padding: 8, maxHeight: 340 },
+  alertList: { padding: 8, maxHeight: 420 },
   alertEmpty: { color: Colors.textLight, fontSize: 14, padding: 16, textAlign: 'center' },
   alertItem: { flexDirection: 'row', gap: 10, padding: 12, borderBottomWidth: 1, borderBottomColor: '#F0F0F0', alignItems: 'center' },
   alertItemDone: { opacity: 0.5 },

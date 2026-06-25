@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Activi
 import { supabase } from '../../lib/supabase'
 import { Colors } from '../../constants/colors'
 import PeriodSelector from '../../components/PeriodSelector'
+import { usePeriod } from '../../contexts/PeriodContext'
 import ClientSearch from '../../components/ClientSearch'
 import { validateRut, formatRut } from '../../lib/validateRut'
 
@@ -21,9 +22,7 @@ const COMMISSION: Record<string, number> = { Platinium: 16000, Diamond: 21000, Z
 const TYPE_COLOR: Record<string, string> = { Platinium: '#7F8C8D', Diamond: '#2471A3', Zafiro: '#8E44AD' }
 
 export default function MPPScreen() {
-  const now = new Date()
-  const [selectedYear, setSelectedYear] = useState(now.getFullYear())
-  const [selectedMonth, setSelectedMonth] = useState(now.getMonth())
+  const { selectedYear, selectedMonth, setSelectedYear, setSelectedMonth } = usePeriod()
   const [mppList, setMppList] = useState<MPP[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)

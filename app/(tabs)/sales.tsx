@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { Colors } from '../../constants/colors'
 import PeriodSelector from '../../components/PeriodSelector'
 import { validateRut, formatRut } from '../../lib/validateRut'
+import { usePeriod } from '../../contexts/PeriodContext'
 
 type Sale = {
   id: string
@@ -81,9 +82,7 @@ function getStatusDate(item: Sale): string | null {
 }
 
 export default function SalesScreen() {
-  const now = new Date()
-  const [selectedYear, setSelectedYear] = useState(now.getFullYear())
-  const [selectedMonth, setSelectedMonth] = useState(now.getMonth())
+  const { selectedYear, selectedMonth, setSelectedYear, setSelectedMonth } = usePeriod()
   const [sales, setSales] = useState<Sale[]>([])
   const [creditsCount, setCreditsCount] = useState(0)
   const [loading, setLoading] = useState(true)

@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Activi
 import { supabase } from '../../lib/supabase'
 import { Colors } from '../../constants/colors'
 import PeriodSelector from '../../components/PeriodSelector'
+import { usePeriod } from '../../contexts/PeriodContext'
 import { validateRut, formatRut } from '../../lib/validateRut'
 
 type Credit = {
@@ -37,9 +38,7 @@ const CREDIT_TYPE_LABEL: Record<string, string> = { CI: 'Crédito Inteligente', 
 const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
 
 export default function CreditsScreen() {
-  const now = new Date()
-  const [selectedYear, setSelectedYear] = useState(now.getFullYear())
-  const [selectedMonth, setSelectedMonth] = useState(now.getMonth())
+  const { selectedYear, selectedMonth, setSelectedYear, setSelectedMonth } = usePeriod()
   const [credits, setCredits] = useState<Credit[]>([])
   const [salesOptions, setSalesOptions] = useState<SaleOption[]>([])
   const [loading, setLoading] = useState(true)

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity, TextInput } from 'react-native'
 import { supabase } from '../../lib/supabase'
 import { Colors } from '../../constants/colors'
+import { usePeriod } from '../../contexts/PeriodContext'
 
 const SALES_COMMISSION = [
   { min: 15, max: Infinity, rate: 0.12, label: '15 o más' },
@@ -30,9 +31,8 @@ const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 
 type Bonus = { id: string; description: string; amount: number }
 
 export default function CommissionsScreen() {
+  const { selectedYear, selectedMonth, setSelectedYear, setSelectedMonth } = usePeriod()
   const [loading, setLoading] = useState(true)
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth())
-  const [selectedYear] = useState(new Date().getFullYear())
   const [salesCount, setSalesCount] = useState(0)
   const [creditsCount, setCreditsCount] = useState(0)
   const [totalDealer, setTotalDealer] = useState(0)

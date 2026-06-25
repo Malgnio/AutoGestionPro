@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Activi
 import { supabase } from '../../lib/supabase'
 import { Colors } from '../../constants/colors'
 import PeriodSelector from '../../components/PeriodSelector'
+import { usePeriod } from '../../contexts/PeriodContext'
 import ClientSearch from '../../components/ClientSearch'
 import { validateRut, formatRut } from '../../lib/validateRut'
 
@@ -27,9 +28,7 @@ const TYPE_COLOR: Record<string, string> = {
 }
 
 export default function InsuranceScreen() {
-  const now = new Date()
-  const [selectedYear, setSelectedYear] = useState(now.getFullYear())
-  const [selectedMonth, setSelectedMonth] = useState(now.getMonth())
+  const { selectedYear, selectedMonth, setSelectedYear, setSelectedMonth } = usePeriod()
   const [insurance, setInsurance] = useState<Insurance[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)

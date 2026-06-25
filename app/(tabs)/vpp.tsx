@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, Activi
 import { supabase } from '../../lib/supabase'
 import { Colors } from '../../constants/colors'
 import PeriodSelector from '../../components/PeriodSelector'
+import { usePeriod } from '../../contexts/PeriodContext'
 import ClientSearch from '../../components/ClientSearch'
 import { validateRut, formatRut } from '../../lib/validateRut'
 
@@ -19,9 +20,7 @@ const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 
 const COMMISSION_PER_VPP = 70000
 
 export default function VPPScreen() {
-  const now = new Date()
-  const [selectedYear, setSelectedYear] = useState(now.getFullYear())
-  const [selectedMonth, setSelectedMonth] = useState(now.getMonth())
+  const { selectedYear, selectedMonth, setSelectedYear, setSelectedMonth } = usePeriod()
   const [vppList, setVppList] = useState<VPP[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
