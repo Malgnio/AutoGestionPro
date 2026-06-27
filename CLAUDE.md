@@ -42,6 +42,9 @@ app/
 components/
   PeriodSelector.tsx   — Selector año + mes (sin prefijo FY)
   ClientSearch.tsx     — Buscador de clientes desde ventas (últimos 4 meses), autocompleta RUT y chasis
+  AlertBell.tsx        — Campana de alertas, se monta en header de cada pantalla via React DOM portal
+contexts/
+  PeriodContext.tsx    — Contexto global de año/mes seleccionado, compartido entre todas las tabs y AlertBell
 lib/supabase.ts
 lib/validateRut.ts
 constants/colors.ts
@@ -129,8 +132,23 @@ transition: 'transform 0.3s ease'
 - **Franco Parodi** (fparodit@gmail.com) — vendedor activo, user_id: 9dfe6d4a-81f3-44df-a8e3-5907368feab3
 - **Luis Cisternas** (lcistern@emeal.nttdata.com) — admin
 
+## Sistema de alertas
+- Tabla `alert_actions` en Supabase: `id, user_id, sale_id, created_at` — persiste alertas gestionadas
+- Alerta se dispara cuando `status = 'Entregado'` y han pasado ≥3 días hábiles desde `delivery_date`
+- El mes de la alerta corresponde al mes de `delivery_date` (no de `sale_month`)
+- Componente `AlertBell` renderiza el panel via `createPortal(document.body)` — evita quedar detrás de `overflow:hidden`
+- El panel se sincroniza con el `PeriodContext` (mismo mes/año que la pantalla activa)
+- La campana aparece en el header de cada pantalla, al lado del botón de acción principal
+- Check ○/✓ por alerta — toggle que inserta/elimina en `alert_actions`
+
+## PeriodContext — estado global de periodo
+- `contexts/PeriodContext.tsx` expone `{ selectedYear, selectedMonth, setSelectedYear, setSelectedMonth }`
+- Todas las tabs y `AlertBell` lo consumen — cambiar mes en cualquier pantalla actualiza la campana
+- El provider envuelve `SidebarContent` en `_layout.tsx`
+
 ## Versión
 - **v1.0.0** — Release oficial inicial (tag en GitHub, 2026-06-21)
+- **v1.1.0** — Sistema de alertas + PeriodContext global (tag en GitHub, 2026-06-27)
 
 ## Pendiente
 - Verificar políticas UPDATE en otras tablas (credits, insurance, vpp, mpp) — sales ya tiene la suya
