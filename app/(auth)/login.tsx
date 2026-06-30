@@ -17,12 +17,20 @@ export default function LoginScreen() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return
+
+    // Detectar recovery/invite desde el hash inmediatamente
     const hash = window.location.hash
     if (hash.includes('type=invite') || hash.includes('type=recovery')) {
       setIsInvite(true)
-      // Supabase parsea automáticamente el token del hash
-      supabase.auth.getSession()
     }
+
+    // Supabase dispara PASSWORD_RECOVERY cuando procesa el token del hash
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY' || event === 'USER_UPDATED') {
+        setIsInvite(true)
+      }
+    })
+    return () => subscription.unsubscribe()
   }, [])
 
   async function handleLogin() {
@@ -52,7 +60,11 @@ export default function LoginScreen() {
     const { error } = await supabase.auth.updateUser({ password: newPassword })
     setLoading(false)
     if (error) { setError('Error al establecer contraseña: ' + error.message) }
-    else { setSuccess('¡Contraseña creada! Redirigiendo...') }
+    else {
+      setSuccess('¡Contraseña actualizada correctamente!')
+      await supabase.auth.signOut()
+      setTimeout(() => { setIsInvite(false); setSuccess('') }, 2000)
+    }
   }
 
   if (showForgot) {
@@ -95,7 +107,11 @@ export default function LoginScreen() {
       <View style={styles.container}>
         <View style={styles.card}>
           <Text style={styles.title}>AutoGestión Pro</Text>
-          <Text style={styles.subtitle}>Crea tu contraseña de acceso</Text>
+          <Text style={styles.subtitle}>
+            {typeof window !== 'undefined' && window.location.hash.includes('type=recovery')
+              ? 'Ingresa tu nueva contraseña'
+              : 'Crea tu contraseña de acceso'}
+          </Text>
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
           {success ? <Text style={styles.successMsg}>{success}</Text> : null}
