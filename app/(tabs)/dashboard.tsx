@@ -36,12 +36,13 @@ type MonthData = {
   vpp: number
   mppCommission: number
   mppCount: number
+  insurance: number
 }
 
 export default function DashboardScreen() {
   const { selectedYear, setSelectedYear } = usePeriod()
   const [loading, setLoading] = useState(true)
-  const [monthData, setMonthData] = useState<MonthData[]>(Array(12).fill({ sales: 0, credits: 0, dealer: 0, vpp: 0, mppCommission: 0, mppCount: 0 }))
+  const [monthData, setMonthData] = useState<MonthData[]>(Array(12).fill({ sales: 0, credits: 0, dealer: 0, vpp: 0, mppCommission: 0, mppCount: 0, insurance: 0 }))
   const [hoveredMonth, setHoveredMonth] = useState<number | null>(null)
 
   useEffect(() => { loadData() }, [selectedYear])
@@ -54,19 +55,21 @@ export default function DashboardScreen() {
     const start = `${selectedYear}-01-01`
     const end = `${selectedYear}-12-31`
 
-    const [{ data: sales }, { data: credits }, { data: vpp }, { data: mpp }] = await Promise.all([
+    const [{ data: sales }, { data: credits }, { data: vpp }, { data: mpp }, { data: insurance }] = await Promise.all([
       supabase.from('sales').select('sale_month').eq('user_id', user.id).gte('sale_month', start).lte('sale_month', end),
       supabase.from('credits').select('sale_month, dealer_cost').eq('user_id', user.id).gte('sale_month', start).lte('sale_month', end),
       supabase.from('vpp').select('sale_month').eq('user_id', user.id).gte('sale_month', start).lte('sale_month', end),
       supabase.from('mpp').select('sale_month, product_type').eq('user_id', user.id).gte('sale_month', start).lte('sale_month', end),
+      supabase.from('insurance').select('sale_month').eq('user_id', user.id).gte('sale_month', start).lte('sale_month', end),
     ])
 
-    const data: MonthData[] = Array.from({ length: 12 }, () => ({ sales: 0, credits: 0, dealer: 0, vpp: 0, mppCommission: 0, mppCount: 0 }))
+    const data: MonthData[] = Array.from({ length: 12 }, () => ({ sales: 0, credits: 0, dealer: 0, vpp: 0, mppCommission: 0, mppCount: 0, insurance: 0 }))
 
     sales?.forEach(s => { const m = new Date(s.sale_month).getUTCMonth(); data[m].sales += 1 })
     credits?.forEach(c => { const m = new Date(c.sale_month).getUTCMonth(); data[m].credits += 1; data[m].dealer += Number(c.dealer_cost) })
     vpp?.forEach(v => { const m = new Date(v.sale_month).getUTCMonth(); data[m].vpp += 1 })
     mpp?.forEach(v => { const m = new Date(v.sale_month).getUTCMonth(); data[m].mppCommission += MPP_COMMISSION[v.product_type] ?? 0; data[m].mppCount += 1 })
+    insurance?.forEach(v => { const m = new Date(v.sale_month).getUTCMonth(); data[m].insurance += 1 })
 
     setMonthData(data)
     setLoading(false)
@@ -79,9 +82,11 @@ export default function DashboardScreen() {
   const totalMppCount = monthData.reduce((s, m) => s + m.mppCount, 0)
   const penetration = totalSales > 0 ? Math.round((totalCredits / totalSales) * 100) : 0
 
+  const totalInsurance = monthData.reduce((s, m) => s + m.insurance, 0)
   const totalCreditCommission = monthData.reduce((sum, m) => sum + m.dealer / 1.19 * getCreditRate(m.credits), 0)
   const totalVppCommission = totalVpp * VPP_COMMISSION
-  const totalCommission = totalCreditCommission + totalVppCommission + totalMppCommission
+  const totalInsuranceCommission = totalInsurance * 23000
+  const totalCommission = totalCreditCommission + totalVppCommission + totalMppCommission + totalInsuranceCommission
 
   const maxBar = Math.max(...monthData.map(m => Math.max(m.sales, m.credits, m.vpp, m.mppCount)), 1)
   const BAR_HEIGHT = 140
@@ -167,7 +172,8 @@ export default function DashboardScreen() {
                   const isHovered = hoveredMonth === i
                   const creditComision = Math.round(m.dealer / 1.19 * getCreditRate(m.credits))
                   const vppComision = m.vpp * VPP_COMMISSION
-                  const totalMes = creditComision + vppComision + m.mppCommission
+                  const insuranceComision = m.insurance * 23000
+                  const totalMes = creditComision + vppComision + m.mppCommission + insuranceComision
                   const penetracion = m.sales > 0 ? Math.round((m.credits / m.sales) * 100) : 0
                   return (
                     <View
@@ -195,6 +201,10 @@ export default function DashboardScreen() {
                           <View style={styles.tooltipRow}>
                             <View style={[styles.tooltipDot, { backgroundColor: '#2471A3' }]} />
                             <Text style={styles.tooltipText}>MPP: <Text style={styles.tooltipBold}>{m.mppCount}</Text></Text>
+                          </View>
+                          <View style={styles.tooltipRow}>
+                            <View style={[styles.tooltipDot, { backgroundColor: '#E67E22' }]} />
+                            <Text style={styles.tooltipText}>Seguros: <Text style={styles.tooltipBold}>{m.insurance}</Text></Text>
                           </View>
                           {totalMes > 0 && (
                             <View style={[styles.tooltipRow, { borderTopWidth: 1, borderTopColor: Colors.border, paddingTop: 6, marginTop: 2 }]}>
