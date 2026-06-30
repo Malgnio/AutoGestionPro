@@ -58,18 +58,21 @@ function formatDateCL(dateStr: string | null): string {
   return `${day}/${m}/${y}`
 }
 
-function dateInput(value: string, onChange: (v: string) => void) {
+function dateInput(value: string, onChange?: (v: string) => void) {
   return (
     // @ts-ignore
     <input
       type="date"
       value={value}
       max={TODAY}
-      onChange={(e: any) => onChange(e.target.value)}
+      readOnly={!onChange}
+      onChange={(e: any) => onChange?.(e.target.value)}
       style={{
         border: `1px solid ${Colors.border}`, borderRadius: 8,
         padding: 10, fontSize: 14, color: Colors.text,
         fontFamily: 'inherit', width: '100%', boxSizing: 'border-box', outline: 'none',
+        backgroundColor: onChange ? 'white' : '#F8F9FA',
+        cursor: onChange ? 'auto' : 'default',
       } as any}
     />
   )
@@ -91,6 +94,7 @@ export default function SalesScreen() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [viewMode, setViewMode] = useState(false)
 
   const [customerName, setCustomerName] = useState('')
   const [rut, setRut] = useState('')
@@ -134,6 +138,24 @@ export default function SalesScreen() {
   }
 
   function openEdit(item: Sale) {
+    setViewMode(false)
+    setEditingId(item.id)
+    setCustomerName(item.customer_name)
+    setRut(item.rut)
+    setModel(item.model)
+    setChassis(item.chassis)
+    setOdv(item.odv)
+    setPurchaseType(item.purchase_type)
+    setStatus(item.status ?? null)
+    setRequestedDate(item.requested_date ?? '')
+    setInvoicedDate(item.invoiced_date ?? '')
+    setDeliveryDate(item.delivery_date ?? '')
+    setError('')
+    setShowForm(true)
+  }
+
+  function openView(item: Sale) {
+    setViewMode(true)
     setEditingId(item.id)
     setCustomerName(item.customer_name)
     setRut(item.rut)
@@ -286,6 +308,9 @@ export default function SalesScreen() {
                         {formatDateCL(statusDate)}
                       </Text>
                       <View style={[styles.cell, styles.cellAction]}>
+                        <TouchableOpacity onPress={() => openView(item)} style={styles.iconBtn}>
+                          <Text style={styles.iconView}>👁️</Text>
+                        </TouchableOpacity>
                         <TouchableOpacity onPress={() => openEdit(item)} style={styles.iconBtn}>
                           <Text style={styles.iconEdit}>✏️</Text>
                         </TouchableOpacity>
@@ -307,10 +332,12 @@ export default function SalesScreen() {
       <View style={[styles.drawer, showForm && styles.drawerOpen]}>
         <View style={styles.drawerHeader}>
           <View>
-            <Text style={styles.drawerTitle}>{editingId ? 'Editar venta' : 'Nueva venta'}</Text>
+            <Text style={styles.drawerTitle}>
+              {viewMode ? 'Detalle venta' : editingId ? 'Editar venta' : 'Nueva venta'}
+            </Text>
             <Text style={styles.drawerSub}>{MONTHS[selectedMonth]} {selectedYear}</Text>
           </View>
-          <TouchableOpacity onPress={() => { setShowForm(false); resetForm() }}>
+          <TouchableOpacity onPress={() => { setShowForm(false); resetForm(); setViewMode(false) }}>
             <Text style={styles.closeBtn}>✕</Text>
           </TouchableOpacity>
         </View>
@@ -319,34 +346,37 @@ export default function SalesScreen() {
           {error ? <Text style={styles.formError}>{error}</Text> : null}
 
           <Text style={styles.label}>Nombre cliente</Text>
-          <TextInput
-            style={styles.input}
-            value={customerName}
-            onChangeText={v => setCustomerName(v.replace(/\b\w/g, c => c.toUpperCase()).replace(/\B\w/g, c => c.toLowerCase()))}
-            placeholderTextColor={Colors.textLight}
-            placeholder="Nombre completo"
-          />
+          {viewMode
+            ? <Text style={styles.viewValue}>{customerName}</Text>
+            : <TextInput style={styles.input} value={customerName} onChangeText={v => setCustomerName(v.replace(/\b\w/g, c => c.toUpperCase()).replace(/\B\w/g, c => c.toLowerCase()))} placeholderTextColor={Colors.textLight} placeholder="Nombre completo" />
+          }
 
           <Text style={styles.label}>RUT</Text>
-          <TextInput
-            style={[styles.input, rut.length > 3 && !validateRut(rut) && styles.inputError]}
-            value={rut}
-            onChangeText={setRut}
-            placeholderTextColor={Colors.textLight}
-            placeholder="12.345.678-9"
-          />
-          {rut.length > 3 && !validateRut(rut) && (
-            <Text style={styles.fieldError}>RUT inválido</Text>
-          )}
+          {viewMode
+            ? <Text style={styles.viewValue}>{rut}</Text>
+            : <>
+                <TextInput style={[styles.input, rut.length > 3 && !validateRut(rut) && styles.inputError]} value={rut} onChangeText={setRut} placeholderTextColor={Colors.textLight} placeholder="12.345.678-9" />
+                {rut.length > 3 && !validateRut(rut) && <Text style={styles.fieldError}>RUT inválido</Text>}
+              </>
+          }
 
           <Text style={styles.label}>Modelo</Text>
-          <TextInput style={styles.input} value={model} onChangeText={setModel} placeholderTextColor={Colors.textLight} placeholder="Ej: Grand i10" />
+          {viewMode
+            ? <Text style={styles.viewValue}>{model}</Text>
+            : <TextInput style={styles.input} value={model} onChangeText={setModel} placeholderTextColor={Colors.textLight} placeholder="Ej: Grand i10" />
+          }
 
           <Text style={styles.label}>Chasis</Text>
-          <TextInput style={styles.input} value={chassis} onChangeText={setChassis} placeholderTextColor={Colors.textLight} placeholder="Número de chasis" autoCapitalize="characters" />
+          {viewMode
+            ? <Text style={styles.viewValue}>{chassis}</Text>
+            : <TextInput style={styles.input} value={chassis} onChangeText={setChassis} placeholderTextColor={Colors.textLight} placeholder="Número de chasis" autoCapitalize="characters" />
+          }
 
           <Text style={styles.label}>OdV</Text>
-          <TextInput style={styles.input} value={odv} onChangeText={setOdv} placeholderTextColor={Colors.textLight} placeholder="Orden de venta" />
+          {viewMode
+            ? <Text style={styles.viewValue}>{odv}</Text>
+            : <TextInput style={styles.input} value={odv} onChangeText={setOdv} placeholderTextColor={Colors.textLight} placeholder="Orden de venta" />
+          }
 
           <Text style={styles.label}>Tipo de compra</Text>
           <View style={styles.typeRow}>
@@ -354,7 +384,8 @@ export default function SalesScreen() {
               <TouchableOpacity
                 key={type}
                 style={[styles.typeBtn, purchaseType === type && styles.typeBtnActive]}
-                onPress={() => setPurchaseType(type)}
+                onPress={() => { if (!viewMode) setPurchaseType(type) }}
+                activeOpacity={viewMode ? 1 : 0.7}
               >
                 <Text style={[styles.typeBtnText, purchaseType === type && styles.typeBtnTextActive]}>
                   {PURCHASE_TYPE_LABEL[type]}
@@ -365,35 +396,46 @@ export default function SalesScreen() {
 
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 14 }}>
             <Text style={styles.label}>Estado y fechas</Text>
-            <TouchableOpacity onPress={() => { setStatus(null); setRequestedDate(''); setInvoicedDate(''); setDeliveryDate('') }}>
-              <Text style={{ fontSize: 12, color: Colors.textLight, textDecorationLine: 'underline' }}>Limpiar</Text>
-            </TouchableOpacity>
+            {!viewMode && (
+              <TouchableOpacity onPress={() => { setStatus(null); setRequestedDate(''); setInvoicedDate(''); setDeliveryDate('') }}>
+                <Text style={{ fontSize: 12, color: Colors.textLight, textDecorationLine: 'underline' }}>Limpiar</Text>
+              </TouchableOpacity>
+            )}
           </View>
           {STATUSES.map(s => (
             <View key={s} style={styles.statusRow}>
               <TouchableOpacity
                 style={[styles.statusBtn, status === s && { backgroundColor: STATUS_COLOR[s], borderColor: STATUS_COLOR[s] }]}
-                onPress={() => setStatus(status === s ? null : s)}
+                onPress={() => { if (!viewMode) setStatus(status === s ? null : s) }}
+                activeOpacity={viewMode ? 1 : 0.7}
               >
                 <Text style={[styles.typeBtnText, status === s && styles.typeBtnTextActive]}>{s}</Text>
               </TouchableOpacity>
               <View style={styles.statusDateInput}>
-                {s === 'Solicitado' && dateInput(requestedDate, setRequestedDate)}
-                {s === 'Facturado' && dateInput(invoicedDate, setInvoicedDate)}
-                {s === 'Entregado' && dateInput(deliveryDate, setDeliveryDate)}
+                {s === 'Solicitado' && dateInput(requestedDate, viewMode ? undefined : setRequestedDate)}
+                {s === 'Facturado' && dateInput(invoicedDate, viewMode ? undefined : setInvoicedDate)}
+                {s === 'Entregado' && dateInput(deliveryDate, viewMode ? undefined : setDeliveryDate)}
               </View>
             </View>
           ))}
         </ScrollView>
 
-        <View style={styles.drawerFooter}>
-          <TouchableOpacity style={styles.cancelButton} onPress={() => { setShowForm(false); resetForm() }}>
-            <Text style={styles.cancelButtonText}>Cancelar</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={saving}>
-            {saving ? <ActivityIndicator color={Colors.white} /> : <Text style={styles.saveButtonText}>{editingId ? 'Guardar cambios' : 'Guardar venta'}</Text>}
-          </TouchableOpacity>
-        </View>
+        {viewMode ? (
+          <View style={styles.drawerFooter}>
+            <TouchableOpacity style={[styles.saveButton, { flex: 1 }]} onPress={() => { setShowForm(false); resetForm(); setViewMode(false) }}>
+              <Text style={styles.saveButtonText}>Cerrar</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={styles.drawerFooter}>
+            <TouchableOpacity style={styles.cancelButton} onPress={() => { setShowForm(false); resetForm() }}>
+              <Text style={styles.cancelButtonText}>Cancelar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={saving}>
+              {saving ? <ActivityIndicator color={Colors.white} /> : <Text style={styles.saveButtonText}>{editingId ? 'Guardar cambios' : 'Guardar venta'}</Text>}
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
     </View>
   )
@@ -430,10 +472,11 @@ const styles = StyleSheet.create({
   cellType: { width: 60 },
   cellStatus: { width: 90 },
   cellDate: { width: 90 },
-  cellAction: { width: 72, flexDirection: 'row', justifyContent: 'flex-end', gap: 4 },
+  cellAction: { width: 104, flexDirection: 'row', justifyContent: 'flex-end', gap: 4 },
   badge: { backgroundColor: Colors.secondary, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2, alignSelf: 'flex-start' },
   badgeText: { color: Colors.white, fontSize: 11, fontWeight: '600' },
   iconBtn: { padding: 6, borderRadius: 6, backgroundColor: '#F0F3F6' },
+  iconView: { fontSize: 14 },
   iconEdit: { fontSize: 14 },
   iconDelete: { fontSize: 14 },
   empty: { alignItems: 'center', padding: 60 },
@@ -456,6 +499,7 @@ const styles = StyleSheet.create({
   formError: { backgroundColor: '#FDECEA', color: Colors.danger, borderRadius: 8, padding: 12, marginBottom: 16, fontSize: 14 },
   label: { fontSize: 13, color: Colors.textLight, marginBottom: 6, marginTop: 14 },
   input: { borderWidth: 1, borderColor: Colors.border, borderRadius: 8, padding: 10, fontSize: 14, color: Colors.text, outlineStyle: 'none' } as any,
+  viewValue: { fontSize: 14, color: Colors.text, paddingVertical: 10, paddingHorizontal: 2, borderBottomWidth: 1, borderBottomColor: Colors.border },
   inputError: { borderColor: Colors.danger },
   fieldError: { fontSize: 12, color: Colors.danger, marginTop: 4 },
   typeRow: { flexDirection: 'row', gap: 8, marginTop: 4, flexWrap: 'wrap' },
