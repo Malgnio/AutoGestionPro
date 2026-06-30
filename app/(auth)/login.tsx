@@ -12,6 +12,8 @@ export default function LoginScreen() {
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [success, setSuccess] = useState('')
+  const [showForgot, setShowForgot] = useState(false)
+  const [forgotEmail, setForgotEmail] = useState('')
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -31,6 +33,17 @@ export default function LoginScreen() {
     if (error) setError('Credenciales incorrectas')
   }
 
+  async function handleForgotPassword() {
+    if (!forgotEmail) { setError('Ingresa tu email'); return }
+    setError(''); setLoading(true)
+    const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+      redirectTo: 'https://auto-gestion-pro.vercel.app/login',
+    })
+    setLoading(false)
+    if (error) { setError('Error al enviar el email: ' + error.message) }
+    else { setSuccess('Te enviamos un email con el link para restablecer tu contraseña.') }
+  }
+
   async function handleSetPassword() {
     if (!newPassword || !confirmPassword) { setError('Completa ambos campos'); return }
     if (newPassword.length < 6) { setError('La contraseña debe tener al menos 6 caracteres'); return }
@@ -40,6 +53,41 @@ export default function LoginScreen() {
     setLoading(false)
     if (error) { setError('Error al establecer contraseña: ' + error.message) }
     else { setSuccess('¡Contraseña creada! Redirigiendo...') }
+  }
+
+  if (showForgot) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.card}>
+          <Text style={styles.title}>AutoGestión Pro</Text>
+          <Text style={styles.subtitle}>Recuperar contraseña</Text>
+
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+          {success ? <Text style={styles.successMsg}>{success}</Text> : null}
+
+          {!success && (
+            <>
+              <TextInput
+                style={styles.input}
+                placeholder="Tu email de acceso"
+                placeholderTextColor={Colors.textLight}
+                value={forgotEmail}
+                onChangeText={setForgotEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+              <TouchableOpacity style={styles.button} onPress={handleForgotPassword} disabled={loading}>
+                {loading ? <ActivityIndicator color={Colors.white} /> : <Text style={styles.buttonText}>Enviar link</Text>}
+              </TouchableOpacity>
+            </>
+          )}
+
+          <TouchableOpacity onPress={() => { setShowForgot(false); setError(''); setSuccess(''); setForgotEmail('') }} style={styles.backLink}>
+            <Text style={styles.backLinkText}>← Volver al login</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    )
   }
 
   if (isInvite) {
@@ -104,6 +152,10 @@ export default function LoginScreen() {
 
         <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
           {loading ? <ActivityIndicator color={Colors.white} /> : <Text style={styles.buttonText}>Ingresar</Text>}
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={() => { setShowForgot(true); setError(''); setForgotEmail(email) }} style={styles.forgotLink}>
+          <Text style={styles.forgotLinkText}>¿Olvidaste tu contraseña?</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -178,5 +230,23 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     fontSize: 14,
     textAlign: 'center',
+  },
+  forgotLink: {
+    marginTop: 16,
+    alignItems: 'center',
+  },
+  forgotLinkText: {
+    fontSize: 13,
+    color: Colors.textLight,
+    textDecorationLine: 'underline',
+  },
+  backLink: {
+    marginTop: 20,
+    alignItems: 'center',
+  },
+  backLinkText: {
+    fontSize: 13,
+    color: Colors.textLight,
+    textDecorationLine: 'underline',
   },
 })
