@@ -27,7 +27,6 @@ function getSalesRate(u: number) { return SALES_COMMISSION.find(r => u >= r.min 
 function getCreditRate(c: number) { return CREDIT_COMMISSION.find(r => c >= r.min && c <= r.max)?.rate ?? 0 }
 
 const MONTH_LABELS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
-const YEARS = [new Date().getFullYear() - 2, new Date().getFullYear() - 1, new Date().getFullYear()]
 
 type MonthData = {
   sales: number
@@ -40,7 +39,8 @@ type MonthData = {
 }
 
 export default function DashboardScreen() {
-  const { selectedYear, setSelectedYear } = usePeriod()
+  const { selectedYear, setSelectedYear, availableYears, addYear } = usePeriod()
+  const nextYear = Math.max(...availableYears) + 1
   const [loading, setLoading] = useState(true)
   const [monthData, setMonthData] = useState<MonthData[]>(Array(12).fill({ sales: 0, credits: 0, dealer: 0, vpp: 0, mppCommission: 0, mppCount: 0, insurance: 0 }))
   const [hoveredMonth, setHoveredMonth] = useState<number | null>(null)
@@ -97,11 +97,14 @@ export default function DashboardScreen() {
         <Text style={styles.pageTitle}>Resumen Anual</Text>
         <View style={styles.topBarRight}>
           <View style={styles.yearRow}>
-            {YEARS.map(y => (
+            {availableYears.map(y => (
               <TouchableOpacity key={y} style={[styles.yearBtn, selectedYear === y && styles.yearBtnActive]} onPress={() => setSelectedYear(y)}>
                 <Text style={[styles.yearBtnText, selectedYear === y && styles.yearBtnTextActive]}>{y}</Text>
               </TouchableOpacity>
             ))}
+            <TouchableOpacity style={styles.addYearBtn} onPress={() => { addYear(nextYear); setSelectedYear(nextYear) }}>
+              <Text style={styles.addYearBtnText}>+ {nextYear}</Text>
+            </TouchableOpacity>
           </View>
           <AlertBell />
         </View>
@@ -256,6 +259,8 @@ const styles = StyleSheet.create({
   yearBtnActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
   yearBtnText: { fontSize: 13, color: Colors.textLight },
   yearBtnTextActive: { color: Colors.white, fontWeight: 'bold' },
+  addYearBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1.5, borderColor: Colors.border, borderStyle: 'dashed' } as any,
+  addYearBtnText: { fontSize: 13, fontWeight: '600', color: Colors.textLight },
   scrollArea: { flex: 1 },
   content: { padding: 32, gap: 16 },
   kpiRow: { flexDirection: 'row', gap: 16 },

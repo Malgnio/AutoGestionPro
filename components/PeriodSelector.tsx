@@ -1,9 +1,9 @@
+import { useState } from 'react'
 import { View, Text, ScrollView, TouchableOpacity, StyleSheet } from 'react-native'
 import { Colors } from '../constants/colors'
+import { usePeriod } from '../contexts/PeriodContext'
 
 const MONTHS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic']
-const CURRENT_YEAR = new Date().getFullYear()
-const YEARS = [CURRENT_YEAR - 2, CURRENT_YEAR - 1, CURRENT_YEAR]
 
 type Props = {
   selectedYear: number
@@ -13,10 +13,23 @@ type Props = {
 }
 
 export default function PeriodSelector({ selectedYear, selectedMonth, onYearChange, onMonthChange }: Props) {
+  const { availableYears, addYear } = usePeriod()
+  const [showYearPicker, setShowYearPicker] = useState(false)
+
+  // Candidate years not yet added (up to 5 years ahead)
+  const maxYear = Math.max(...availableYears)
+  const nextYear = maxYear + 1
+
+  function handleAddYear() {
+    addYear(nextYear)
+    onYearChange(nextYear)
+    setShowYearPicker(false)
+  }
+
   return (
     <View style={styles.container}>
       <View style={styles.yearRow}>
-        {YEARS.map(year => (
+        {availableYears.map(year => (
           <TouchableOpacity
             key={year}
             style={[styles.yearBtn, selectedYear === year && styles.yearBtnActive]}
@@ -27,6 +40,11 @@ export default function PeriodSelector({ selectedYear, selectedMonth, onYearChan
             </Text>
           </TouchableOpacity>
         ))}
+
+        {/* Botón + para agregar siguiente año */}
+        <TouchableOpacity style={styles.addYearBtn} onPress={handleAddYear}>
+          <Text style={styles.addYearText}>+ {nextYear}</Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.monthRow}>
@@ -56,6 +74,7 @@ const styles = StyleSheet.create({
   yearRow: {
     flexDirection: 'row',
     gap: 8,
+    alignItems: 'center',
   },
   yearBtn: {
     paddingHorizontal: 16,
@@ -73,6 +92,19 @@ const styles = StyleSheet.create({
   },
   yearTextActive: {
     color: Colors.white,
+  },
+  addYearBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: Colors.border,
+    borderStyle: 'dashed',
+  } as any,
+  addYearText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.textLight,
   },
   monthRow: {
     gap: 8,
