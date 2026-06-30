@@ -142,9 +142,29 @@ transition: 'transform 0.3s ease'
 - Check ○/✓ por alerta — toggle que inserta/elimina en `alert_actions`
 
 ## PeriodContext — estado global de periodo
-- `contexts/PeriodContext.tsx` expone `{ selectedYear, selectedMonth, setSelectedYear, setSelectedMonth }`
+- `contexts/PeriodContext.tsx` expone `{ selectedYear, selectedMonth, availableYears, setSelectedYear, setSelectedMonth, addYear }`
 - Todas las tabs y `AlertBell` lo consumen — cambiar mes en cualquier pantalla actualiza la campana
 - El provider envuelve `SidebarContent` en `_layout.tsx`
+- `availableYears` inicia con [año-2, año-1, año actual]. Botón `+ YYYY` en PeriodSelector agrega el año siguiente
+- Los años agregados viven en memoria (se pierden al recargar) — datos en Supabase persisten igual
+
+## Ventas — Modo visualización (👁️)
+- Botón 👁️ en cada fila abre el drawer en modo solo lectura (`viewMode: true`)
+- Campos de texto muestran valor plano, fechas con fondo gris y `readOnly`, botones tipo/estado no responden
+- Footer muestra solo botón "Cerrar" (sin Guardar)
+- Título del drawer: "Detalle venta" en modo vista, "Editar venta" en modo edición
+
+## Dashboard — tooltip mensual
+- Al hover sobre cada barra muestra: Ventas, Créditos, VPP, MPP, **Seguros** y Comisión total del mes
+- Seguros incluidos en query del dashboard y en cálculo de comisión total ($23.000 × cantidad)
+
+## Recuperar contraseña
+- Link "¿Olvidaste tu contraseña?" en pantalla de login
+- Llama a `supabase.auth.resetPasswordForEmail()` con redirect a `https://auto-gestion-pro.vercel.app/login`
+- Al llegar por el link del email, `onAuthStateChange` detecta evento `PASSWORD_RECOVERY` y muestra formulario
+- `detectSessionInUrl: true` en `lib/supabase.ts` — crítico para que Supabase lea el token del hash
+- Límite Supabase plan gratuito: 2 emails/hora. Si se supera, esperar antes de reintentar
+- Después de cambiar contraseña: cierra sesión y vuelve al login
 
 ## Versión
 - **v1.0.0** — Release oficial inicial (tag en GitHub, 2026-06-21)
@@ -153,3 +173,4 @@ transition: 'transform 0.3s ease'
 ## Pendiente
 - Verificar políticas UPDATE en otras tablas (credits, insurance, vpp, mpp) — sales ya tiene la suya
 - Perfil gerente con vista consolidada (futuro)
+- Considerar SMTP propio en Supabase para eliminar límite de emails de recuperación
