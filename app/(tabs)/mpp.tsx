@@ -207,9 +207,10 @@ export default function MPPScreen() {
             <TextInput
               style={styles.input}
               value={clientName}
-              onChangeText={setClientName}
+              onChangeText={v => setClientName(v.toLowerCase().replace(/(^|\s)\S/g, c => c.toUpperCase()))}
               placeholder="Nombre completo del cliente"
               placeholderTextColor={Colors.textLight}
+              autoCapitalize="none"
             />
           ) : (
             <ClientSearch
@@ -225,13 +226,16 @@ export default function MPPScreen() {
 
           <Text style={styles.label}>RUT *</Text>
           <TextInput
-            style={[styles.input, !manualMode && { backgroundColor: '#F8F9FA', color: Colors.textLight }]}
+            style={[styles.input, !manualMode && { backgroundColor: '#F8F9FA', color: Colors.textLight }, manualMode && rut.length > 3 && !validateRut(rut) && styles.inputError]}
             value={rut}
-            onChangeText={manualMode ? v => setRut(v) : undefined}
+            onChangeText={manualMode ? v => setRut(formatRut(v)) : undefined}
             editable={manualMode}
             placeholder={manualMode ? 'Ej: 12.345.678-9' : 'Se autocompleta al elegir cliente'}
             placeholderTextColor={Colors.textLight}
           />
+          {manualMode && rut.length > 3 && !validateRut(rut) && (
+            <Text style={styles.fieldError}>RUT inválido</Text>
+          )}
 
           <Text style={styles.label}>Chasis</Text>
           <TextInput
