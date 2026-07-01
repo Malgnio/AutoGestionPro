@@ -16,7 +16,7 @@ type Sale = {
   odv: string
   purchase_type: 'R' | 'F' | 'FL' | 'SEG'
   sale_month: string
-  status: 'Solicitado' | 'Facturado' | 'Entregado' | null
+  status: 'Solicitado' | 'Llegada Suc.' | 'Facturado' | 'Entregado' | null
   requested_date: string | null
   invoiced_date: string | null
   delivery_date: string | null
@@ -36,16 +36,12 @@ const PURCHASE_TYPES = ['R', 'F', 'FL', 'SEG'] as const
 const PURCHASE_TYPE_LABEL: Record<string, string> = { R: 'Retail', F: 'Flota', FL: 'Fleet', SEG: 'Seguro' }
 const BADGE_COLOR: Record<string, string> = { R: '#2E86C1', F: '#2E86C1', FL: '#1B4F72', SEG: '#8E44AD' }
 
-const STATUSES = ['Solicitado', 'Facturado', 'Entregado'] as const
+const STATUSES = ['Solicitado', 'Llegada Suc.', 'Facturado', 'Entregado'] as const
 const STATUS_COLOR: Record<string, string> = {
   Solicitado: '#E67E22',
+  'Llegada Suc.': '#7D3C98',
   Facturado: '#2471A3',
   Entregado: '#1E8449',
-}
-const STATUS_DATE_LABEL: Record<string, string> = {
-  Solicitado: 'Fec. Solicitado',
-  Facturado: 'Fec. Facturado',
-  Entregado: 'Fec. Entregado',
 }
 
 const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
@@ -81,6 +77,7 @@ function dateInput(value: string, onChange?: (v: string) => void) {
 
 function getStatusDate(item: Sale): string | null {
   if (item.status === 'Solicitado') return item.requested_date
+  if (item.status === 'Llegada Suc.') return item.arrival_date
   if (item.status === 'Facturado') return item.invoiced_date
   if (item.status === 'Entregado') return item.delivery_date
   return null
@@ -456,29 +453,20 @@ export default function SalesScreen() {
             )}
           </View>
           {STATUSES.map(s => (
-            <View key={s}>
-              <View style={styles.statusRow}>
-                <TouchableOpacity
-                  style={[styles.statusBtn, status === s && { backgroundColor: STATUS_COLOR[s], borderColor: STATUS_COLOR[s] }]}
-                  onPress={() => { if (!viewMode) setStatus(status === s ? null : s) }}
-                  activeOpacity={viewMode ? 1 : 0.7}
-                >
-                  <Text style={[styles.typeBtnText, status === s && styles.typeBtnTextActive]}>{s}</Text>
-                </TouchableOpacity>
-                <View style={styles.statusDateInput}>
-                  {s === 'Solicitado' && dateInput(requestedDate, viewMode ? undefined : setRequestedDate)}
-                  {s === 'Facturado' && dateInput(invoicedDate, viewMode ? undefined : setInvoicedDate)}
-                  {s === 'Entregado' && dateInput(deliveryDate, viewMode ? undefined : setDeliveryDate)}
-                </View>
+            <View key={s} style={styles.statusRow}>
+              <TouchableOpacity
+                style={[styles.statusBtn, status === s && { backgroundColor: STATUS_COLOR[s], borderColor: STATUS_COLOR[s] }]}
+                onPress={() => { if (!viewMode) setStatus(status === s ? null : s) }}
+                activeOpacity={viewMode ? 1 : 0.7}
+              >
+                <Text style={[styles.typeBtnText, styles.statusBtnText, status === s && styles.typeBtnTextActive]}>{s}</Text>
+              </TouchableOpacity>
+              <View style={styles.statusDateInput}>
+                {s === 'Solicitado' && dateInput(requestedDate, viewMode ? undefined : setRequestedDate)}
+                {s === 'Llegada Suc.' && dateInput(arrivalDate, viewMode ? undefined : setArrivalDate)}
+                {s === 'Facturado' && dateInput(invoicedDate, viewMode ? undefined : setInvoicedDate)}
+                {s === 'Entregado' && dateInput(deliveryDate, viewMode ? undefined : setDeliveryDate)}
               </View>
-              {s === 'Solicitado' && (
-                <View style={styles.statusRow}>
-                  <Text style={[styles.typeBtnText, { width: 88, color: Colors.textLight, fontSize: 12 }]}>Llegada{'\n'}Suc.</Text>
-                  <View style={styles.statusDateInput}>
-                    {dateInput(arrivalDate, viewMode ? undefined : setArrivalDate)}
-                  </View>
-                </View>
-              )}
             </View>
           ))}
         </ScrollView>
@@ -571,7 +559,8 @@ const styles = StyleSheet.create({
   typeBtnText: { color: Colors.textLight, fontSize: 13, fontWeight: '600' },
   typeBtnTextActive: { color: Colors.white },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 8 },
-  statusBtn: { width: 88, padding: 8, borderRadius: 6, borderWidth: 1, borderColor: Colors.border, alignItems: 'center' },
+  statusBtn: { width: 100, padding: 8, borderRadius: 6, borderWidth: 1, borderColor: Colors.border, alignItems: 'center' },
+  statusBtnText: { fontSize: 12 },
   statusDateInput: { flex: 1 },
   cancelButton: { flex: 1, paddingVertical: 12, borderRadius: 8, borderWidth: 1, borderColor: Colors.border, alignItems: 'center' },
   cancelButtonText: { color: Colors.textLight, fontWeight: '600' },
