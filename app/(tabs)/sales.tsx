@@ -456,27 +456,33 @@ export default function SalesScreen() {
             )}
           </View>
           {STATUSES.map(s => (
-            <View key={s} style={styles.statusRow}>
-              <TouchableOpacity
-                style={[styles.statusBtn, status === s && { backgroundColor: STATUS_COLOR[s], borderColor: STATUS_COLOR[s] }]}
-                onPress={() => { if (!viewMode) setStatus(status === s ? null : s) }}
-                activeOpacity={viewMode ? 1 : 0.7}
-              >
-                <Text style={[styles.typeBtnText, status === s && styles.typeBtnTextActive]}>{s}</Text>
-              </TouchableOpacity>
-              <View style={styles.statusDateInput}>
-                {s === 'Solicitado' && dateInput(requestedDate, viewMode ? undefined : setRequestedDate)}
-                {s === 'Facturado' && dateInput(invoicedDate, viewMode ? undefined : setInvoicedDate)}
-                {s === 'Entregado' && dateInput(deliveryDate, viewMode ? undefined : setDeliveryDate)}
+            <View key={s}>
+              <View style={styles.statusRow}>
+                <TouchableOpacity
+                  style={[styles.statusBtn, status === s && { backgroundColor: STATUS_COLOR[s], borderColor: STATUS_COLOR[s] }]}
+                  onPress={() => { if (!viewMode) setStatus(status === s ? null : s) }}
+                  activeOpacity={viewMode ? 1 : 0.7}
+                >
+                  <Text style={[styles.typeBtnText, status === s && styles.typeBtnTextActive]}>{s}</Text>
+                </TouchableOpacity>
+                <View style={styles.statusDateInput}>
+                  {s === 'Solicitado' && dateInput(requestedDate, viewMode ? undefined : setRequestedDate)}
+                  {s === 'Facturado' && dateInput(invoicedDate, viewMode ? undefined : setInvoicedDate)}
+                  {s === 'Entregado' && dateInput(deliveryDate, viewMode ? undefined : setDeliveryDate)}
+                </View>
               </View>
+              {s === 'Solicitado' && (
+                <View style={styles.statusRow}>
+                  <TouchableOpacity style={styles.statusBtn} activeOpacity={1}>
+                    <Text style={styles.typeBtnText}>Llegada Suc.</Text>
+                  </TouchableOpacity>
+                  <View style={styles.statusDateInput}>
+                    {dateInput(arrivalDate, viewMode ? undefined : setArrivalDate)}
+                  </View>
+                </View>
+              )}
             </View>
           ))}
-          <View style={styles.statusRow}>
-            <Text style={[styles.statusBtn, { textAlignVertical: 'center', paddingTop: 10, fontSize: 12, color: Colors.textLight, borderColor: Colors.border }]}>Fec. Llegada{'\n'}a Suc.</Text>
-            <View style={styles.statusDateInput}>
-              {dateInput(arrivalDate, viewMode ? undefined : setArrivalDate)}
-            </View>
-          </View>
         </ScrollView>
 
         {viewMode ? (
