@@ -95,6 +95,9 @@ export default function SalesScreen() {
   const [error, setError] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState(false)
+  const [creditTarget, setCreditTarget] = useState(70)
+  const [editingTarget, setEditingTarget] = useState(false)
+  const [targetInput, setTargetInput] = useState('')
 
   const [customerName, setCustomerName] = useState('')
   const [rut, setRut] = useState('')
@@ -107,7 +110,23 @@ export default function SalesScreen() {
   const [invoicedDate, setInvoicedDate] = useState('')
   const [deliveryDate, setDeliveryDate] = useState('')
 
-  useEffect(() => { loadSales() }, [selectedYear, selectedMonth])
+  useEffect(() => { loadSales(); loadTarget() }, [selectedYear, selectedMonth])
+
+  async function loadTarget() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    const month = new Date(selectedYear, selectedMonth, 1).toISOString().split('T')[0]
+    const { data } = await supabase.from('targets').select('value').eq('user_id', user.id).eq('month', month).eq('metric', 'credit_penetration').maybeSingle()
+    setCreditTarget(data?.value ?? 70)
+  }
+
+  async function saveTarget(value: number) {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    const month = new Date(selectedYear, selectedMonth, 1).toISOString().split('T')[0]
+    await supabase.from('targets').upsert({ user_id: user.id, month, metric: 'credit_penetration', value }, { onConflict: 'user_id,month,metric' })
+    setCreditTarget(value)
+  }
 
   async function loadSales() {
     setLoading(true)
@@ -247,13 +266,42 @@ export default function SalesScreen() {
                 <Text style={[styles.kpiValue, { color: Colors.text }]}>{creditsCount}</Text>
                 <Text style={[styles.kpiSub, { color: Colors.textLight }]}>del mes</Text>
               </View>
-              <View style={[styles.kpiCard, {
-                backgroundColor: penetration >= 70 ? Colors.success : penetration >= 50 ? Colors.accent : '#C0392B'
-              }]}>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                style={[styles.kpiCard, {
+                  backgroundColor: penetration >= creditTarget ? Colors.success : penetration >= creditTarget * 0.7 ? Colors.accent : '#C0392B'
+                }]}
+                onPress={() => { setTargetInput(String(creditTarget)); setEditingTarget(true) }}
+              >
                 <Text style={styles.kpiLabel}>Penetración</Text>
                 <Text style={styles.kpiValue}>{penetration}%</Text>
-                <Text style={styles.kpiSub}>Meta: 70%</Text>
-              </View>
+                {editingTarget ? (
+                  <View style={styles.targetEditRow}>
+                    <Text style={[styles.kpiSub, { marginRight: 4 }]}>Meta:</Text>
+                    <TextInput
+                      style={styles.targetInput}
+                      value={targetInput}
+                      onChangeText={v => setTargetInput(v.replace(/[^0-9]/g, ''))}
+                      keyboardType="numeric"
+                      autoFocus
+                      maxLength={3}
+                      onBlur={() => {
+                        const v = Math.min(100, Math.max(1, parseInt(targetInput) || creditTarget))
+                        saveTarget(v)
+                        setEditingTarget(false)
+                      }}
+                      onSubmitEditing={() => {
+                        const v = Math.min(100, Math.max(1, parseInt(targetInput) || creditTarget))
+                        saveTarget(v)
+                        setEditingTarget(false)
+                      }}
+                    />
+                    <Text style={styles.kpiSub}>%</Text>
+                  </View>
+                ) : (
+                  <Text style={styles.kpiSub}>Meta: {creditTarget}% ✎</Text>
+                )}
+              </TouchableOpacity>
             </View>
           )
         })()}
@@ -514,4 +562,6 @@ const styles = StyleSheet.create({
   cancelButtonText: { color: Colors.textLight, fontWeight: '600' },
   saveButton: { flex: 1, backgroundColor: Colors.primary, paddingVertical: 12, borderRadius: 8, alignItems: 'center' },
   saveButtonText: { color: Colors.white, fontWeight: 'bold' },
+  targetEditRow: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
+  targetInput: { backgroundColor: 'rgba(255,255,255,0.25)', color: Colors.white, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2, fontSize: 12, fontWeight: '600', width: 36, textAlign: 'center', outlineStyle: 'none' } as any,
 })

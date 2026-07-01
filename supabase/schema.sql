@@ -76,6 +76,28 @@ create policy "Vendedor elimina sus ventas"
   on public.sales for delete
   using (auth.uid() = user_id);
 
+-- Tabla de metas por métrica y mes
+create table public.targets (
+  id uuid default uuid_generate_v4() primary key,
+  user_id uuid references public.profiles(id) on delete cascade not null,
+  month date not null,
+  metric text not null,
+  value numeric not null,
+  created_at timestamp with time zone default now(),
+  unique (user_id, month, metric)
+);
+
+alter table public.targets enable row level security;
+
+create policy "Vendedor ve sus metas"
+  on public.targets for select using (auth.uid() = user_id);
+create policy "Vendedor inserta sus metas"
+  on public.targets for insert with check (auth.uid() = user_id);
+create policy "Vendedor actualiza sus metas"
+  on public.targets for update using (auth.uid() = user_id);
+create policy "Vendedor elimina sus metas"
+  on public.targets for delete using (auth.uid() = user_id);
+
 -- Políticas para credits
 create policy "Vendedor ve sus créditos"
   on public.credits for select
