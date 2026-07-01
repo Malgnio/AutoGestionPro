@@ -573,7 +573,7 @@ const styles = StyleSheet.create({
   typeBtnText: { color: Colors.textLight, fontSize: 13, fontWeight: '600' },
   typeBtnTextActive: { color: Colors.white },
   statusRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 8 },
-  statusBtn: { width: 100, padding: 10, borderRadius: 6, borderWidth: 1, borderColor: Colors.border, alignItems: 'center' },
+  statusBtn: { width: 88, padding: 8, borderRadius: 6, borderWidth: 1, borderColor: Colors.border, alignItems: 'center' },
   statusDateInput: { flex: 1 },
   cancelButton: { flex: 1, paddingVertical: 12, borderRadius: 8, borderWidth: 1, borderColor: Colors.border, alignItems: 'center' },
   cancelButtonText: { color: Colors.textLight, fontWeight: '600' },
