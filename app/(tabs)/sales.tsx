@@ -473,8 +473,8 @@ export default function SalesScreen() {
               </View>
               {s === 'Solicitado' && (
                 <View style={styles.statusRow}>
-                  <TouchableOpacity style={styles.statusBtn} activeOpacity={1}>
-                    <Text style={styles.typeBtnText}>Llegada Suc.</Text>
+                  <TouchableOpacity style={[styles.statusBtn, { width: 88, paddingHorizontal: 4 }]} activeOpacity={1}>
+                    <Text style={[styles.typeBtnText, { fontSize: 11, textAlign: 'center' }]} numberOfLines={1} adjustsFontSizeToFit>Llegada Suc.</Text>
                   </TouchableOpacity>
                   <View style={styles.statusDateInput}>
                     {dateInput(arrivalDate, viewMode ? undefined : setArrivalDate)}
