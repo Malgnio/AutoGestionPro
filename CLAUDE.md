@@ -52,14 +52,14 @@ hooks/useAuth.ts
 ```
 
 ## Datos que maneja
-- **Ventas**: Cliente, RUT, Modelo, Chasis, OdV, Tipo (R=Retail, F=Flota, FL=Fleet, SEG=Seguro), Estado (nullable), Fec. Solicitado, Fec. Facturado, Fec. Entregado
+- **Ventas**: Cliente, RUT, Modelo, Chasis, OdV, Tipo (R=Retail, F=Flota, FL=Fleet, SEG=Seguro), Estado (nullable), Fec. Solicitado, Fec. Llegada Suc., Fec. Facturado, Fec. Entregado
 - **Créditos**: Cliente, RUT, C.Dealer (monto), Tipo (CI=Crédito Inteligente, CC=Crédito Convencional)
 - **Seguros**: Cliente, RUT, Chasis, Tipo (Light, Plus, Premium, Usados)
 - **VPP**: Cliente, RUT, Chasis, PPU
 - **MPP**: Cliente, RUT, Chasis, Tipo (Platinium, Diamond, Zafiro)
 
 ## Tablas Supabase
-- `sales` — ventas (status nullable, requested_date, invoiced_date, delivery_date)
+- `sales` — ventas (status nullable, requested_date, arrival_date, invoiced_date, delivery_date)
 - `credits` — créditos (credit_type: 'CI' | 'CC')
 - `insurance` — seguros
 - `vpp` — vehículos en parte de pago
@@ -67,6 +67,8 @@ hooks/useAuth.ts
 - `profiles` — datos de usuario (full_name, role)
 - `salaries` — sueldo base por usuario y mes (UNIQUE user_id+month)
 - `bonuses` — bonos por usuario y mes (descripción + monto)
+- `targets` — metas editables por usuario, mes y métrica (UNIQUE user_id+month+metric). Ej: `credit_penetration`
+- `alert_actions` — alertas gestionadas (id, user_id, sale_id, created_at)
 
 Todas las tablas tienen RLS habilitado con política `auth.uid() = user_id`.
 **IMPORTANTE**: La tabla `sales` requiere política UPDATE explícita — ya creada: "Vendedor actualiza sus ventas".
@@ -85,8 +87,10 @@ Todas las tablas tienen RLS habilitado con política `auth.uid() = user_id`.
 **MPP**: Platinium=$16.000 | Diamond=$21.000 | Zafiro=$26.000
 
 ## Penetración crédito
-Meta: **70%** (créditos / ventas del mes)
-- Verde: ≥70% | Naranja: 50-69% | Rojo: <50%
+- Meta editable por mes (guardada en tabla `targets`, métrica `credit_penetration`). Default: 70%
+- La tarjeta de penetración es clickeable → muestra input inline para editar la meta
+- Color de la tarjeta: Verde ≥meta | Naranja ≥70% de meta | Rojo <70% de meta
+- Dashboard muestra "Meta promedio: XX%" = promedio de penetración de los meses con ≥1 venta
 
 ## Pantalla Sueldo (commissions.tsx)
 Muestra por mes:
@@ -121,11 +125,17 @@ transition: 'transform 0.3s ease'
 ```
 
 ## Ventas — Estado y fechas
-- `status`: nullable (sin default). Valores: 'Solicitado' | 'Facturado' | 'Entregado' | null
-- Cada estado tiene su propia fecha: `requested_date`, `invoiced_date`, `delivery_date`
-- La columna "Fecha" en la tabla muestra la fecha del estado activo
+- `status`: nullable (sin default). Valores: 'Solicitado' | 'Llegada Suc.' | 'Facturado' | 'Entregado' | null
+- Constraint en Supabase: `sales_status_check` incluye los 4 valores
+- Cada estado tiene su propia fecha independiente:
+  - Solicitado → `requested_date`
+  - Llegada Suc. → `arrival_date`
+  - Facturado → `invoiced_date`
+  - Entregado → `delivery_date`
+- La columna "Fecha" en la grilla muestra la fecha del estado activo
 - Formato fecha en tabla: DD/MM/YYYY. Input con `max=hoy` (no permite fechas futuras)
-- Botón "Limpiar" en drawer resetea estado y las 3 fechas a null
+- Botón "Limpiar" en drawer resetea estado y las 4 fechas a null
+- Colores de estado: Solicitado=naranja, Llegada Suc.=morado, Facturado=azul, Entregado=verde
 
 ## Usuarios del sistema
 - **Enrique Cisternas** (enrique.cisternasm@gmail.com) — cuenta sin datos (se movieron a Franco)
@@ -148,14 +158,22 @@ transition: 'transform 0.3s ease'
 - `availableYears` inicia con [año-2, año-1, año actual]. Botón `+ YYYY` en PeriodSelector agrega el año siguiente
 - Los años agregados viven en memoria (se pierden al recargar) — datos en Supabase persisten igual
 
-## Ventas — Modo visualización (👁️)
+## Modo visualización (👁️) — patrón común en todas las grillas
 - Botón 👁️ en cada fila abre el drawer en modo solo lectura (`viewMode: true`)
-- Campos de texto muestran valor plano, fechas con fondo gris y `readOnly`, botones tipo/estado no responden
-- Footer muestra solo botón "Cerrar" (sin Guardar)
-- Título del drawer: "Detalle venta" en modo vista, "Editar venta" en modo edición
+- Campos de texto muestran valor plano (`viewValue` style), fechas con fondo gris y `readOnly`, botones tipo/estado no responden (`activeOpacity={1}`, no-op)
+- Footer muestra solo botón "Cerrar" (sin Guardar ni Cancelar)
+- Título del drawer: "Detalle X" en modo vista, "Editar X" en modo edición
+- Aplicado en: Ventas, Créditos, Seguros, VPP, MPP
+- `cellAction` width = 104 para alojar 3 iconos (👁️ ✏️ 🗑️)
 
-## Dashboard — tooltip mensual
-- Al hover sobre cada barra muestra: Ventas, Créditos, VPP, MPP, **Seguros** y Comisión total del mes
+## MPP — Modo ingreso manual
+- Toggle "Desde ventas / Ingreso manual" en el drawer (oculto en viewMode)
+- Modo manual: nombre en title case (primera letra mayúscula, resto minúscula), RUT con `formatRut` + validación en tiempo real
+- Modo ventas: usa `ClientSearch` como siempre
+
+## Dashboard — KPIs y tooltip mensual
+- KPIs anuales: Ventas, Créditos, VPP, MPP, **Seguros** (card naranja con comisión total)
+- Al hover sobre cada barra muestra: Ventas, Créditos, VPP, MPP, Seguros y Comisión total del mes
 - Seguros incluidos en query del dashboard y en cálculo de comisión total ($23.000 × cantidad)
 
 ## Recuperar contraseña
@@ -169,6 +187,7 @@ transition: 'transform 0.3s ease'
 ## Versión
 - **v1.0.0** — Release oficial inicial (tag en GitHub, 2026-06-21)
 - **v1.1.0** — Sistema de alertas + PeriodContext global (tag en GitHub, 2026-06-27)
+- **Sin tag** — (2026-07-01): modo vista 👁️ en todas las grillas, MPP ingreso manual, dashboard Seguros KPI, meta penetración editable, estado "Llegada Suc." en ventas
 
 ## Pendiente
 - Verificar políticas UPDATE en otras tablas (credits, insurance, vpp, mpp) — sales ya tiene la suya
