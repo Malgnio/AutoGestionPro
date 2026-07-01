@@ -48,6 +48,7 @@ export default function CreditsScreen() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [viewMode, setViewMode] = useState(false)
 
   const [customerName, setCustomerName] = useState('')
   const [rut, setRut] = useState('')
@@ -91,7 +92,7 @@ export default function CreditsScreen() {
   }
 
   function resetForm() {
-    setCustomerName(''); setRut(''); setDealerCost(''); setCreditType('CI'); setError(''); setEditingId(null); setShowDropdown(false)
+    setCustomerName(''); setRut(''); setDealerCost(''); setCreditType('CI'); setError(''); setEditingId(null); setShowDropdown(false); setViewMode(false)
   }
 
   function selectSale(sale: SaleOption) {
@@ -101,6 +102,18 @@ export default function CreditsScreen() {
   }
 
   function openEdit(item: Credit) {
+    setViewMode(false)
+    setEditingId(item.id)
+    setCustomerName(item.customer_name)
+    setRut(item.rut)
+    setDealerCost(String(item.dealer_cost))
+    setCreditType(item.credit_type as 'CI' | 'CC')
+    setError('')
+    setShowForm(true)
+  }
+
+  function openView(item: Credit) {
+    setViewMode(true)
     setEditingId(item.id)
     setCustomerName(item.customer_name)
     setRut(item.rut)
@@ -235,6 +248,9 @@ export default function CreditsScreen() {
                       </View>
                     </View>
                     <View style={[styles.cell, styles.cellAction]}>
+                      <TouchableOpacity onPress={() => openView(item)} style={styles.iconBtn}>
+                        <Text>👁️</Text>
+                      </TouchableOpacity>
                       <TouchableOpacity onPress={() => openEdit(item)} style={styles.iconBtn}>
                         <Text style={styles.iconEdit}>✏️</Text>
                       </TouchableOpacity>
@@ -255,7 +271,7 @@ export default function CreditsScreen() {
       <View style={[styles.drawer, showForm && styles.drawerOpen]}>
         <View style={styles.drawerHeader}>
           <View>
-            <Text style={styles.drawerTitle}>{editingId ? 'Editar crédito' : 'Nuevo crédito'}</Text>
+            <Text style={styles.drawerTitle}>{viewMode ? 'Detalle crédito' : editingId ? 'Editar crédito' : 'Nuevo crédito'}</Text>
             <Text style={styles.drawerSub}>{MONTHS[selectedMonth]} {selectedYear}</Text>
           </View>
           <TouchableOpacity onPress={() => { setShowForm(false); resetForm() }}>
@@ -267,48 +283,63 @@ export default function CreditsScreen() {
           {error ? <Text style={styles.formError}>{error}</Text> : null}
 
           <Text style={styles.label}>Nombre cliente</Text>
-          <TextInput
-            style={styles.input}
-            value={customerName}
-            onChangeText={v => { setCustomerName(v); setShowDropdown(true); setRut('') }}
-            onFocus={() => setShowDropdown(true)}
-            placeholderTextColor={Colors.textLight}
-            placeholder="Buscar cliente del mes..."
-          />
-          {showDropdown && filteredOptions.length > 0 && (
-            <ScrollView style={styles.dropdown} nestedScrollEnabled keyboardShouldPersistTaps="handled">
-              {filteredOptions.map((s, i) => (
-                <TouchableOpacity
-                  key={i}
-                  style={[styles.dropdownItem, i === filteredOptions.length - 1 && { borderBottomWidth: 0 }]}
-                  onPress={() => selectSale(s)}
-                >
-                  <Text style={styles.dropdownName}>{s.customer_name}</Text>
-                  <Text style={styles.dropdownRut}>{s.rut}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+          {viewMode ? (
+            <Text style={styles.viewValue}>{customerName}</Text>
+          ) : (
+            <>
+              <TextInput
+                style={styles.input}
+                value={customerName}
+                onChangeText={v => { setCustomerName(v); setShowDropdown(true); setRut('') }}
+                onFocus={() => setShowDropdown(true)}
+                placeholderTextColor={Colors.textLight}
+                placeholder="Buscar cliente del mes..."
+              />
+              {showDropdown && filteredOptions.length > 0 && (
+                <ScrollView style={styles.dropdown} nestedScrollEnabled keyboardShouldPersistTaps="handled">
+                  {filteredOptions.map((s, i) => (
+                    <TouchableOpacity
+                      key={i}
+                      style={[styles.dropdownItem, i === filteredOptions.length - 1 && { borderBottomWidth: 0 }]}
+                      onPress={() => selectSale(s)}
+                    >
+                      <Text style={styles.dropdownName}>{s.customer_name}</Text>
+                      <Text style={styles.dropdownRut}>{s.rut}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              )}
+            </>
           )}
 
           <Text style={styles.label}>RUT</Text>
-          <TextInput
-            style={[styles.input, styles.inputReadonly]}
-            value={rut}
-            editable={false}
-            placeholderTextColor={Colors.textLight}
-            placeholder="Se autocompleta al elegir cliente"
-          />
+          {viewMode ? (
+            <Text style={styles.viewValue}>{rut}</Text>
+          ) : (
+            <TextInput
+              style={[styles.input, styles.inputReadonly]}
+              value={rut}
+              editable={false}
+              placeholderTextColor={Colors.textLight}
+              placeholder="Se autocompleta al elegir cliente"
+            />
+          )}
 
           <Text style={styles.label}>C. Dealer (monto)</Text>
-          <TextInput style={styles.input} value={dealerCost} onChangeText={setDealerCost} keyboardType="numeric" placeholderTextColor={Colors.textLight} placeholder="Ej: 1500000" />
+          {viewMode ? (
+            <Text style={styles.viewValue}>${Number(dealerCost).toLocaleString('es-CL')}</Text>
+          ) : (
+            <TextInput style={styles.input} value={dealerCost} onChangeText={setDealerCost} keyboardType="numeric" placeholderTextColor={Colors.textLight} placeholder="Ej: 1500000" />
+          )}
 
           <Text style={styles.label}>Tipo de crédito</Text>
           <View style={styles.typeRow}>
             {CREDIT_TYPES.map(type => (
               <TouchableOpacity
                 key={type}
+                activeOpacity={viewMode ? 1 : 0.7}
                 style={[styles.typeBtn, creditType === type && styles.typeBtnActive]}
-                onPress={() => setCreditType(type)}
+                onPress={() => { if (!viewMode) setCreditType(type) }}
               >
                 <Text style={[styles.typeBtnText, creditType === type && styles.typeBtnTextActive]}>
                   {CREDIT_TYPE_LABEL[type]}
@@ -319,12 +350,20 @@ export default function CreditsScreen() {
         </ScrollView>
 
         <View style={styles.drawerFooter}>
-          <TouchableOpacity style={styles.cancelButton} onPress={() => { setShowForm(false); resetForm() }}>
-            <Text style={styles.cancelButtonText}>Cancelar</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={saving}>
-            {saving ? <ActivityIndicator color={Colors.white} /> : <Text style={styles.saveButtonText}>{editingId ? 'Guardar cambios' : 'Guardar crédito'}</Text>}
-          </TouchableOpacity>
+          {viewMode ? (
+            <TouchableOpacity style={styles.saveButton} onPress={() => { setShowForm(false); resetForm() }}>
+              <Text style={styles.saveButtonText}>Cerrar</Text>
+            </TouchableOpacity>
+          ) : (
+            <>
+              <TouchableOpacity style={styles.cancelButton} onPress={() => { setShowForm(false); resetForm() }}>
+                <Text style={styles.cancelButtonText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={saving}>
+                {saving ? <ActivityIndicator color={Colors.white} /> : <Text style={styles.saveButtonText}>{editingId ? 'Guardar cambios' : 'Guardar crédito'}</Text>}
+              </TouchableOpacity>
+            </>
+          )}
         </View>
       </View>
     </View>
@@ -358,7 +397,7 @@ const styles = StyleSheet.create({
   cellRut: { flex: 1.2 },
   cellCost: { flex: 1.2 },
   cellType: { width: 90 },
-  cellAction: { width: 72, flexDirection: 'row', justifyContent: 'flex-end', gap: 4 },
+  cellAction: { width: 104, flexDirection: 'row', justifyContent: 'flex-end', gap: 4 },
   badge: { borderRadius: 4, paddingHorizontal: 8, paddingVertical: 2, alignSelf: 'flex-start' },
   badgeCI: { backgroundColor: Colors.secondary }, // CI
   badgeCC: { backgroundColor: Colors.accent },
@@ -393,6 +432,7 @@ const styles = StyleSheet.create({
   label: { fontSize: 13, color: Colors.textLight, marginBottom: 6, marginTop: 14 },
   input: { borderWidth: 1, borderColor: Colors.border, borderRadius: 8, padding: 10, fontSize: 14, color: Colors.text, outlineStyle: 'none' } as any,
   inputReadonly: { backgroundColor: '#F8F9FA', color: Colors.textLight },
+  viewValue: { fontSize: 14, color: Colors.text, paddingVertical: 10, paddingHorizontal: 2, borderBottomWidth: 1, borderBottomColor: Colors.border },
   dropdown: {
     backgroundColor: '#F8F9FA', borderWidth: 1, borderColor: Colors.border,
     borderRadius: 8, maxHeight: 200, marginTop: 4,

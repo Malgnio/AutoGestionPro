@@ -36,6 +36,7 @@ export default function InsuranceScreen() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [viewMode, setViewMode] = useState(false)
 
   const [customerName, setCustomerName] = useState('')
   const [rut, setRut] = useState('')
@@ -62,10 +63,22 @@ export default function InsuranceScreen() {
   }
 
   function resetForm() {
-    setCustomerName(''); setRut(''); setChassis(''); setInsuranceType('Premium'); setError(''); setEditingId(null)
+    setCustomerName(''); setRut(''); setChassis(''); setInsuranceType('Premium'); setError(''); setEditingId(null); setViewMode(false)
   }
 
   function openEdit(item: Insurance) {
+    setViewMode(false)
+    setEditingId(item.id)
+    setCustomerName(item.customer_name)
+    setRut(item.rut)
+    setChassis(item.chassis)
+    setInsuranceType(item.insurance_type)
+    setError('')
+    setShowForm(true)
+  }
+
+  function openView(item: Insurance) {
+    setViewMode(true)
     setEditingId(item.id)
     setCustomerName(item.customer_name)
     setRut(item.rut)
@@ -180,6 +193,9 @@ export default function InsuranceScreen() {
                       </View>
                     </View>
                     <View style={[styles.cell, styles.cellAction]}>
+                      <TouchableOpacity onPress={() => openView(item)} style={styles.iconBtn}>
+                        <Text>👁️</Text>
+                      </TouchableOpacity>
                       <TouchableOpacity onPress={() => openEdit(item)} style={styles.iconBtn}>
                         <Text>✏️</Text>
                       </TouchableOpacity>
@@ -200,7 +216,7 @@ export default function InsuranceScreen() {
       <View style={[styles.drawer, showForm && styles.drawerOpen]}>
         <View style={styles.drawerHeader}>
           <View>
-            <Text style={styles.drawerTitle}>{editingId ? 'Editar seguro' : 'Nuevo seguro'}</Text>
+            <Text style={styles.drawerTitle}>{viewMode ? 'Detalle seguro' : editingId ? 'Editar seguro' : 'Nuevo seguro'}</Text>
             <Text style={styles.drawerSub}>{MONTHS[selectedMonth]} {selectedYear}</Text>
           </View>
           <TouchableOpacity onPress={() => { setShowForm(false); resetForm() }}>
@@ -212,33 +228,45 @@ export default function InsuranceScreen() {
           {error ? <Text style={styles.formError}>{error}</Text> : null}
 
           <Text style={styles.label}>Nombre cliente</Text>
-          <ClientSearch
-            value={customerName}
-            rut={rut}
-            selectedYear={selectedYear}
-            selectedMonth={selectedMonth}
-            onChangeName={v => { setCustomerName(v); setRut('') }}
-            onSelect={s => { setCustomerName(s.customer_name); setRut(s.rut); setChassis(s.chassis ?? '') }}
-            includesChassis
-          />
+          {viewMode ? (
+            <Text style={styles.viewValue}>{customerName}</Text>
+          ) : (
+            <ClientSearch
+              value={customerName}
+              rut={rut}
+              selectedYear={selectedYear}
+              selectedMonth={selectedMonth}
+              onChangeName={v => { setCustomerName(v); setRut('') }}
+              onSelect={s => { setCustomerName(s.customer_name); setRut(s.rut); setChassis(s.chassis ?? '') }}
+              includesChassis
+            />
+          )}
+
+          <Text style={styles.label}>RUT</Text>
+          <Text style={[styles.viewValue, !viewMode && { backgroundColor: '#F8F9FA', color: Colors.textLight, borderRadius: 8, padding: 10, borderBottomWidth: 0, borderWidth: 1, borderColor: Colors.border }]}>{rut || '—'}</Text>
 
           <Text style={styles.label}>Chasis</Text>
-          <TextInput
-            style={styles.input}
-            value={chassis}
-            onChangeText={setChassis}
-            placeholder="Número de chasis"
-            placeholderTextColor={Colors.textLight}
-            autoCapitalize="characters"
-          />
+          {viewMode ? (
+            <Text style={styles.viewValue}>{chassis || '—'}</Text>
+          ) : (
+            <TextInput
+              style={styles.input}
+              value={chassis}
+              onChangeText={setChassis}
+              placeholder="Número de chasis"
+              placeholderTextColor={Colors.textLight}
+              autoCapitalize="characters"
+            />
+          )}
 
           <Text style={styles.label}>Tipo de seguro</Text>
           <View style={styles.typeRow}>
             {INSURANCE_TYPES.map(type => (
               <TouchableOpacity
                 key={type}
+                activeOpacity={viewMode ? 1 : 0.7}
                 style={[styles.typeBtn, insuranceType === type && styles.typeBtnActive]}
-                onPress={() => setInsuranceType(type)}
+                onPress={() => { if (!viewMode) setInsuranceType(type) }}
               >
                 <Text style={[styles.typeBtnText, insuranceType === type && styles.typeBtnTextActive]}>{type}</Text>
               </TouchableOpacity>
@@ -251,12 +279,20 @@ export default function InsuranceScreen() {
         </ScrollView>
 
         <View style={styles.drawerFooter}>
-          <TouchableOpacity style={styles.cancelButton} onPress={() => { setShowForm(false); resetForm() }}>
-            <Text style={styles.cancelButtonText}>Cancelar</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={saving}>
-            {saving ? <ActivityIndicator color={Colors.white} /> : <Text style={styles.saveButtonText}>{editingId ? 'Guardar cambios' : 'Guardar seguro'}</Text>}
-          </TouchableOpacity>
+          {viewMode ? (
+            <TouchableOpacity style={styles.saveButton} onPress={() => { setShowForm(false); resetForm() }}>
+              <Text style={styles.saveButtonText}>Cerrar</Text>
+            </TouchableOpacity>
+          ) : (
+            <>
+              <TouchableOpacity style={styles.cancelButton} onPress={() => { setShowForm(false); resetForm() }}>
+                <Text style={styles.cancelButtonText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={saving}>
+                {saving ? <ActivityIndicator color={Colors.white} /> : <Text style={styles.saveButtonText}>{editingId ? 'Guardar cambios' : 'Guardar seguro'}</Text>}
+              </TouchableOpacity>
+            </>
+          )}
         </View>
       </View>
     </View>
@@ -289,7 +325,7 @@ const styles = StyleSheet.create({
   cellRut: { flex: 1.2 },
   cellChassis: { flex: 2 },
   cellType: { width: 90 },
-  cellAction: { width: 72, flexDirection: 'row', justifyContent: 'flex-end', gap: 4 },
+  cellAction: { width: 104, flexDirection: 'row', justifyContent: 'flex-end', gap: 4 },
   badge: { borderRadius: 4, paddingHorizontal: 8, paddingVertical: 2, alignSelf: 'flex-start' },
   badgeText: { color: Colors.white, fontSize: 11, fontWeight: '600' },
   iconBtn: { padding: 6, borderRadius: 6, backgroundColor: '#F0F3F6' },
@@ -313,6 +349,7 @@ const styles = StyleSheet.create({
   formError: { backgroundColor: '#FDECEA', color: Colors.danger, borderRadius: 8, padding: 12, marginBottom: 16, fontSize: 14 },
   label: { fontSize: 13, color: Colors.textLight, marginBottom: 6, marginTop: 14 },
   input: { borderWidth: 1, borderColor: Colors.border, borderRadius: 8, padding: 10, fontSize: 14, color: Colors.text, outlineStyle: 'none' } as any,
+  viewValue: { fontSize: 14, color: Colors.text, paddingVertical: 10, paddingHorizontal: 2, borderBottomWidth: 1, borderBottomColor: Colors.border },
   inputError: { borderColor: Colors.danger },
   fieldError: { fontSize: 12, color: Colors.danger, marginTop: 4 },
   typeRow: { flexDirection: 'row', gap: 8, marginTop: 4 },

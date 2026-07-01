@@ -28,6 +28,7 @@ export default function VPPScreen() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [viewMode, setViewMode] = useState(false)
 
   const [clientName, setClientName] = useState('')
   const [rut, setRut] = useState('')
@@ -50,10 +51,18 @@ export default function VPPScreen() {
   }
 
   function resetForm() {
-    setClientName(''); setRut(''); setChassis(''); setPpu(''); setError(''); setEditingId(null)
+    setClientName(''); setRut(''); setChassis(''); setPpu(''); setError(''); setEditingId(null); setViewMode(false)
   }
 
   function openEdit(v: VPP) {
+    setViewMode(false)
+    setEditingId(v.id)
+    setClientName(v.client_name); setRut(v.rut); setChassis(v.chassis ?? ''); setPpu(v.ppu)
+    setError(''); setShowForm(true)
+  }
+
+  function openView(v: VPP) {
+    setViewMode(true)
     setEditingId(v.id)
     setClientName(v.client_name); setRut(v.rut); setChassis(v.chassis ?? ''); setPpu(v.ppu)
     setError(''); setShowForm(true)
@@ -147,6 +156,9 @@ export default function VPPScreen() {
                     <Text style={[styles.cell, styles.cellChassis, { color: Colors.textLight }]}>{item.chassis || '—'}</Text>
                     <Text style={[styles.cell, styles.cellPpu, { fontWeight: '600' }]}>{item.ppu}</Text>
                     <View style={[styles.cell, styles.cellAction]}>
+                      <TouchableOpacity onPress={() => openView(item)} style={styles.iconBtn}>
+                        <Text>👁️</Text>
+                      </TouchableOpacity>
                       <TouchableOpacity onPress={() => openEdit(item)} style={styles.iconBtn}>
                         <Text>✏️</Text>
                       </TouchableOpacity>
@@ -167,7 +179,7 @@ export default function VPPScreen() {
       <View style={[styles.drawer, showForm && styles.drawerOpen]}>
         <View style={styles.drawerHeader}>
           <View>
-            <Text style={styles.drawerTitle}>{editingId ? 'Editar VPP' : 'Nuevo VPP'}</Text>
+            <Text style={styles.drawerTitle}>{viewMode ? 'Detalle VPP' : editingId ? 'Editar VPP' : 'Nuevo VPP'}</Text>
             <Text style={styles.drawerSub}>{MONTHS[selectedMonth]} {selectedYear}</Text>
           </View>
           <TouchableOpacity onPress={() => { setShowForm(false); resetForm() }}>
@@ -178,41 +190,64 @@ export default function VPPScreen() {
         <ScrollView style={styles.drawerBody} showsVerticalScrollIndicator={false}>
           {error ? <Text style={styles.formError}>{error}</Text> : null}
 
-          <Text style={styles.label}>Nombre Cliente *</Text>
-          <ClientSearch
-            value={clientName}
-            rut={rut}
-            selectedYear={selectedYear}
-            selectedMonth={selectedMonth}
-            onChangeName={v => { setClientName(v); setRut('') }}
-            onSelect={s => { setClientName(s.customer_name); setRut(s.rut); setChassis(s.chassis ?? '') }}
-            includesChassis
-          />
+          <Text style={styles.label}>Nombre Cliente</Text>
+          {viewMode ? (
+            <Text style={styles.viewValue}>{clientName}</Text>
+          ) : (
+            <ClientSearch
+              value={clientName}
+              rut={rut}
+              selectedYear={selectedYear}
+              selectedMonth={selectedMonth}
+              onChangeName={v => { setClientName(v); setRut('') }}
+              onSelect={s => { setClientName(s.customer_name); setRut(s.rut); setChassis(s.chassis ?? '') }}
+              includesChassis
+            />
+          )}
+
+          <Text style={styles.label}>RUT</Text>
+          <Text style={[styles.viewValue, !viewMode && { backgroundColor: '#F8F9FA', color: Colors.textLight, borderRadius: 8, padding: 10, borderBottomWidth: 0, borderWidth: 1, borderColor: Colors.border }]}>{rut || '—'}</Text>
 
           <Text style={styles.label}>Chasis</Text>
-          <TextInput
-            style={styles.input} value={chassis}
-            onChangeText={v => setChassis(v.toUpperCase())}
-            placeholder="Número de chasis" placeholderTextColor={Colors.textLight}
-            autoCapitalize="characters"
-          />
+          {viewMode ? (
+            <Text style={styles.viewValue}>{chassis || '—'}</Text>
+          ) : (
+            <TextInput
+              style={styles.input} value={chassis}
+              onChangeText={v => setChassis(v.toUpperCase())}
+              placeholder="Número de chasis" placeholderTextColor={Colors.textLight}
+              autoCapitalize="characters"
+            />
+          )}
 
-          <Text style={styles.label}>PPU *</Text>
-          <TextInput
-            style={styles.input} value={ppu}
-            onChangeText={v => setPpu(v.toUpperCase())}
-            placeholder="ABCD-12" placeholderTextColor={Colors.textLight}
-            autoCapitalize="characters"
-          />
+          <Text style={styles.label}>PPU</Text>
+          {viewMode ? (
+            <Text style={styles.viewValue}>{ppu || '—'}</Text>
+          ) : (
+            <TextInput
+              style={styles.input} value={ppu}
+              onChangeText={v => setPpu(v.toUpperCase())}
+              placeholder="ABCD-12" placeholderTextColor={Colors.textLight}
+              autoCapitalize="characters"
+            />
+          )}
         </ScrollView>
 
         <View style={styles.drawerFooter}>
-          <TouchableOpacity style={styles.cancelButton} onPress={() => { setShowForm(false); resetForm() }}>
-            <Text style={styles.cancelButtonText}>Cancelar</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={saving}>
-            {saving ? <ActivityIndicator color={Colors.white} /> : <Text style={styles.saveButtonText}>{editingId ? 'Guardar cambios' : 'Guardar VPP'}</Text>}
-          </TouchableOpacity>
+          {viewMode ? (
+            <TouchableOpacity style={styles.saveButton} onPress={() => { setShowForm(false); resetForm() }}>
+              <Text style={styles.saveButtonText}>Cerrar</Text>
+            </TouchableOpacity>
+          ) : (
+            <>
+              <TouchableOpacity style={styles.cancelButton} onPress={() => { setShowForm(false); resetForm() }}>
+                <Text style={styles.cancelButtonText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={saving}>
+                {saving ? <ActivityIndicator color={Colors.white} /> : <Text style={styles.saveButtonText}>{editingId ? 'Guardar cambios' : 'Guardar VPP'}</Text>}
+              </TouchableOpacity>
+            </>
+          )}
         </View>
       </View>
     </View>
@@ -245,7 +280,7 @@ const styles = StyleSheet.create({
   cellRut: { flex: 1.2 },
   cellChassis: { flex: 2 },
   cellPpu: { flex: 1 },
-  cellAction: { width: 72, flexDirection: 'row', justifyContent: 'flex-end', gap: 4 },
+  cellAction: { width: 104, flexDirection: 'row', justifyContent: 'flex-end', gap: 4 },
   iconBtn: { padding: 6, borderRadius: 6, backgroundColor: '#F0F3F6' },
   empty: { alignItems: 'center', padding: 60 },
   emptyText: { color: Colors.textLight, fontSize: 15 },
@@ -267,6 +302,7 @@ const styles = StyleSheet.create({
   formError: { backgroundColor: '#FDECEA', color: Colors.danger, borderRadius: 8, padding: 12, marginBottom: 16, fontSize: 14 },
   label: { fontSize: 13, color: Colors.textLight, marginBottom: 6, marginTop: 14 },
   input: { borderWidth: 1, borderColor: Colors.border, borderRadius: 8, padding: 10, fontSize: 14, color: Colors.text, outlineStyle: 'none' } as any,
+  viewValue: { fontSize: 14, color: Colors.text, paddingVertical: 10, paddingHorizontal: 2, borderBottomWidth: 1, borderBottomColor: Colors.border },
   inputError: { borderColor: Colors.danger },
   fieldError: { fontSize: 12, color: Colors.danger, marginTop: 4 },
   cancelButton: { flex: 1, paddingVertical: 12, borderRadius: 8, borderWidth: 1, borderColor: Colors.border, alignItems: 'center' },

@@ -30,6 +30,7 @@ export default function MPPScreen() {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [viewMode, setViewMode] = useState(false)
 
   const [clientName, setClientName] = useState('')
   const [rut, setRut] = useState('')
@@ -53,10 +54,18 @@ export default function MPPScreen() {
   }
 
   function resetForm() {
-    setClientName(''); setRut(''); setChassis(''); setProductType('Diamond'); setError(''); setEditingId(null); setManualMode(false)
+    setClientName(''); setRut(''); setChassis(''); setProductType('Diamond'); setError(''); setEditingId(null); setManualMode(false); setViewMode(false)
   }
 
   function openEdit(v: MPP) {
+    setViewMode(false)
+    setEditingId(v.id)
+    setClientName(v.client_name); setRut(v.rut); setChassis(v.chassis ?? ''); setProductType(v.product_type)
+    setManualMode(false); setError(''); setShowForm(true)
+  }
+
+  function openView(v: MPP) {
+    setViewMode(true)
     setEditingId(v.id)
     setClientName(v.client_name); setRut(v.rut); setChassis(v.chassis ?? ''); setProductType(v.product_type)
     setManualMode(false); setError(''); setShowForm(true)
@@ -156,6 +165,9 @@ export default function MPPScreen() {
                       </View>
                     </View>
                     <View style={[styles.cell, styles.cellAction]}>
+                      <TouchableOpacity onPress={() => openView(item)} style={styles.iconBtn}>
+                        <Text>👁️</Text>
+                      </TouchableOpacity>
                       <TouchableOpacity onPress={() => openEdit(item)} style={styles.iconBtn}>
                         <Text>✏️</Text>
                       </TouchableOpacity>
@@ -176,7 +188,7 @@ export default function MPPScreen() {
       <View style={[styles.drawer, showForm && styles.drawerOpen]}>
         <View style={styles.drawerHeader}>
           <View>
-            <Text style={styles.drawerTitle}>{editingId ? 'Editar MPP' : 'Nuevo MPP'}</Text>
+            <Text style={styles.drawerTitle}>{viewMode ? 'Detalle MPP' : editingId ? 'Editar MPP' : 'Nuevo MPP'}</Text>
             <Text style={styles.drawerSub}>{MONTHS[selectedMonth]} {selectedYear}</Text>
           </View>
           <TouchableOpacity onPress={() => { setShowForm(false); resetForm() }}>
@@ -187,23 +199,27 @@ export default function MPPScreen() {
         <ScrollView style={styles.drawerBody} showsVerticalScrollIndicator={false}>
           {error ? <Text style={styles.formError}>{error}</Text> : null}
 
-          <View style={styles.modeToggleRow}>
-            <TouchableOpacity
-              style={[styles.modeToggleBtn, !manualMode && styles.modeToggleBtnActive]}
-              onPress={() => { setManualMode(false); setClientName(''); setRut(''); setChassis('') }}
-            >
-              <Text style={[styles.modeToggleBtnText, !manualMode && styles.modeToggleBtnTextActive]}>Desde ventas</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.modeToggleBtn, manualMode && styles.modeToggleBtnActive]}
-              onPress={() => { setManualMode(true); setClientName(''); setRut(''); setChassis('') }}
-            >
-              <Text style={[styles.modeToggleBtnText, manualMode && styles.modeToggleBtnTextActive]}>Ingreso manual</Text>
-            </TouchableOpacity>
-          </View>
+          {!viewMode && (
+            <View style={styles.modeToggleRow}>
+              <TouchableOpacity
+                style={[styles.modeToggleBtn, !manualMode && styles.modeToggleBtnActive]}
+                onPress={() => { setManualMode(false); setClientName(''); setRut(''); setChassis('') }}
+              >
+                <Text style={[styles.modeToggleBtnText, !manualMode && styles.modeToggleBtnTextActive]}>Desde ventas</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modeToggleBtn, manualMode && styles.modeToggleBtnActive]}
+                onPress={() => { setManualMode(true); setClientName(''); setRut(''); setChassis('') }}
+              >
+                <Text style={[styles.modeToggleBtnText, manualMode && styles.modeToggleBtnTextActive]}>Ingreso manual</Text>
+              </TouchableOpacity>
+            </View>
+          )}
 
-          <Text style={styles.label}>Nombre Cliente *</Text>
-          {manualMode ? (
+          <Text style={styles.label}>Nombre Cliente</Text>
+          {viewMode ? (
+            <Text style={styles.viewValue}>{clientName}</Text>
+          ) : manualMode ? (
             <TextInput
               style={styles.input}
               value={clientName}
@@ -224,34 +240,45 @@ export default function MPPScreen() {
             />
           )}
 
-          <Text style={styles.label}>RUT *</Text>
-          <TextInput
-            style={[styles.input, !manualMode && { backgroundColor: '#F8F9FA', color: Colors.textLight }, manualMode && rut.length > 3 && !validateRut(rut) && styles.inputError]}
-            value={rut}
-            onChangeText={manualMode ? v => setRut(formatRut(v)) : undefined}
-            editable={manualMode}
-            placeholder={manualMode ? 'Ej: 12.345.678-9' : 'Se autocompleta al elegir cliente'}
-            placeholderTextColor={Colors.textLight}
-          />
-          {manualMode && rut.length > 3 && !validateRut(rut) && (
-            <Text style={styles.fieldError}>RUT inválido</Text>
+          <Text style={styles.label}>RUT</Text>
+          {viewMode ? (
+            <Text style={styles.viewValue}>{rut || '—'}</Text>
+          ) : (
+            <>
+              <TextInput
+                style={[styles.input, !manualMode && { backgroundColor: '#F8F9FA', color: Colors.textLight }, manualMode && rut.length > 3 && !validateRut(rut) && styles.inputError]}
+                value={rut}
+                onChangeText={manualMode ? v => setRut(formatRut(v)) : undefined}
+                editable={manualMode}
+                placeholder={manualMode ? 'Ej: 12.345.678-9' : 'Se autocompleta al elegir cliente'}
+                placeholderTextColor={Colors.textLight}
+              />
+              {manualMode && rut.length > 3 && !validateRut(rut) && (
+                <Text style={styles.fieldError}>RUT inválido</Text>
+              )}
+            </>
           )}
 
           <Text style={styles.label}>Chasis</Text>
-          <TextInput
-            style={styles.input} value={chassis}
-            onChangeText={v => setChassis(v.toUpperCase())}
-            placeholder="Número de chasis" placeholderTextColor={Colors.textLight}
-            autoCapitalize="characters"
-          />
+          {viewMode ? (
+            <Text style={styles.viewValue}>{chassis || '—'}</Text>
+          ) : (
+            <TextInput
+              style={styles.input} value={chassis}
+              onChangeText={v => setChassis(v.toUpperCase())}
+              placeholder="Número de chasis" placeholderTextColor={Colors.textLight}
+              autoCapitalize="characters"
+            />
+          )}
 
-          <Text style={styles.label}>Tipo de Producto *</Text>
+          <Text style={styles.label}>Tipo de Producto</Text>
           <View style={styles.typeRow}>
             {PRODUCT_TYPES.map(type => (
               <TouchableOpacity
                 key={type}
+                activeOpacity={viewMode ? 1 : 0.7}
                 style={[styles.typeBtn, productType === type && { backgroundColor: TYPE_COLOR[type], borderColor: TYPE_COLOR[type] }]}
-                onPress={() => setProductType(type)}
+                onPress={() => { if (!viewMode) setProductType(type) }}
               >
                 <Text style={[styles.typeBtnText, productType === type && styles.typeBtnTextActive]}>{type}</Text>
               </TouchableOpacity>
@@ -266,12 +293,20 @@ export default function MPPScreen() {
         </ScrollView>
 
         <View style={styles.drawerFooter}>
-          <TouchableOpacity style={styles.cancelButton} onPress={() => { setShowForm(false); resetForm() }}>
-            <Text style={styles.cancelButtonText}>Cancelar</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={saving}>
-            {saving ? <ActivityIndicator color={Colors.white} /> : <Text style={styles.saveButtonText}>{editingId ? 'Guardar cambios' : 'Guardar MPP'}</Text>}
-          </TouchableOpacity>
+          {viewMode ? (
+            <TouchableOpacity style={styles.saveButton} onPress={() => { setShowForm(false); resetForm() }}>
+              <Text style={styles.saveButtonText}>Cerrar</Text>
+            </TouchableOpacity>
+          ) : (
+            <>
+              <TouchableOpacity style={styles.cancelButton} onPress={() => { setShowForm(false); resetForm() }}>
+                <Text style={styles.cancelButtonText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={saving}>
+                {saving ? <ActivityIndicator color={Colors.white} /> : <Text style={styles.saveButtonText}>{editingId ? 'Guardar cambios' : 'Guardar MPP'}</Text>}
+              </TouchableOpacity>
+            </>
+          )}
         </View>
       </View>
     </View>
@@ -304,7 +339,8 @@ const styles = StyleSheet.create({
   cellRut: { flex: 1.2 },
   cellChassis: { flex: 2 },
   cellType: { width: 100 },
-  cellAction: { width: 72, flexDirection: 'row', justifyContent: 'flex-end', gap: 4 },
+  cellAction: { width: 104, flexDirection: 'row', justifyContent: 'flex-end', gap: 4 },
+  viewValue: { fontSize: 14, color: Colors.text, paddingVertical: 10, paddingHorizontal: 2, borderBottomWidth: 1, borderBottomColor: Colors.border },
   badge: { borderRadius: 4, paddingHorizontal: 8, paddingVertical: 2, alignSelf: 'flex-start' },
   badgeText: { color: Colors.white, fontSize: 11, fontWeight: '600' },
   iconBtn: { padding: 6, borderRadius: 6, backgroundColor: '#F0F3F6' },
