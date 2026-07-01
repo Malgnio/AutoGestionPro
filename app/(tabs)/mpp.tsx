@@ -35,6 +35,7 @@ export default function MPPScreen() {
   const [rut, setRut] = useState('')
   const [chassis, setChassis] = useState('')
   const [productType, setProductType] = useState<'Platinium' | 'Diamond' | 'Zafiro'>('Diamond')
+  const [manualMode, setManualMode] = useState(false)
 
   useEffect(() => { loadMpp() }, [selectedYear, selectedMonth])
 
@@ -52,13 +53,13 @@ export default function MPPScreen() {
   }
 
   function resetForm() {
-    setClientName(''); setRut(''); setChassis(''); setProductType('Diamond'); setError(''); setEditingId(null)
+    setClientName(''); setRut(''); setChassis(''); setProductType('Diamond'); setError(''); setEditingId(null); setManualMode(false)
   }
 
   function openEdit(v: MPP) {
     setEditingId(v.id)
     setClientName(v.client_name); setRut(v.rut); setChassis(v.chassis ?? ''); setProductType(v.product_type)
-    setError(''); setShowForm(true)
+    setManualMode(false); setError(''); setShowForm(true)
   }
 
   async function handleSave() {
@@ -186,15 +187,50 @@ export default function MPPScreen() {
         <ScrollView style={styles.drawerBody} showsVerticalScrollIndicator={false}>
           {error ? <Text style={styles.formError}>{error}</Text> : null}
 
+          <View style={styles.modeToggleRow}>
+            <TouchableOpacity
+              style={[styles.modeToggleBtn, !manualMode && styles.modeToggleBtnActive]}
+              onPress={() => { setManualMode(false); setClientName(''); setRut(''); setChassis('') }}
+            >
+              <Text style={[styles.modeToggleBtnText, !manualMode && styles.modeToggleBtnTextActive]}>Desde ventas</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.modeToggleBtn, manualMode && styles.modeToggleBtnActive]}
+              onPress={() => { setManualMode(true); setClientName(''); setRut(''); setChassis('') }}
+            >
+              <Text style={[styles.modeToggleBtnText, manualMode && styles.modeToggleBtnTextActive]}>Ingreso manual</Text>
+            </TouchableOpacity>
+          </View>
+
           <Text style={styles.label}>Nombre Cliente *</Text>
-          <ClientSearch
-            value={clientName}
-            rut={rut}
-            selectedYear={selectedYear}
-            selectedMonth={selectedMonth}
-            onChangeName={v => { setClientName(v); setRut('') }}
-            onSelect={s => { setClientName(s.customer_name); setRut(s.rut); setChassis(s.chassis ?? '') }}
-            includesChassis
+          {manualMode ? (
+            <TextInput
+              style={styles.input}
+              value={clientName}
+              onChangeText={setClientName}
+              placeholder="Nombre completo del cliente"
+              placeholderTextColor={Colors.textLight}
+            />
+          ) : (
+            <ClientSearch
+              value={clientName}
+              rut={rut}
+              selectedYear={selectedYear}
+              selectedMonth={selectedMonth}
+              onChangeName={v => { setClientName(v); setRut('') }}
+              onSelect={s => { setClientName(s.customer_name); setRut(s.rut); setChassis(s.chassis ?? '') }}
+              includesChassis
+            />
+          )}
+
+          <Text style={styles.label}>RUT *</Text>
+          <TextInput
+            style={[styles.input, !manualMode && { backgroundColor: '#F8F9FA', color: Colors.textLight }]}
+            value={rut}
+            onChangeText={manualMode ? v => setRut(v) : undefined}
+            editable={manualMode}
+            placeholder={manualMode ? 'Ej: 12.345.678-9' : 'Se autocompleta al elegir cliente'}
+            placeholderTextColor={Colors.textLight}
           />
 
           <Text style={styles.label}>Chasis</Text>
@@ -300,4 +336,9 @@ const styles = StyleSheet.create({
   cancelButtonText: { color: Colors.textLight, fontWeight: '600' },
   saveButton: { flex: 1, backgroundColor: Colors.primary, paddingVertical: 12, borderRadius: 8, alignItems: 'center' },
   saveButtonText: { color: Colors.white, fontWeight: 'bold' },
+  modeToggleRow: { flexDirection: 'row', gap: 8, marginTop: 14, marginBottom: 4, backgroundColor: '#F0F3F6', borderRadius: 8, padding: 4 },
+  modeToggleBtn: { flex: 1, paddingVertical: 7, borderRadius: 6, alignItems: 'center' },
+  modeToggleBtnActive: { backgroundColor: Colors.white, shadowColor: '#000', shadowOpacity: 0.08, shadowRadius: 4, elevation: 2 },
+  modeToggleBtnText: { fontSize: 13, color: Colors.textLight, fontWeight: '500' },
+  modeToggleBtnTextActive: { color: Colors.primary, fontWeight: '700' },
 })
