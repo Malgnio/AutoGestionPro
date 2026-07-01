@@ -81,6 +81,10 @@ export default function DashboardScreen() {
   const totalMppCommission = monthData.reduce((s, m) => s + m.mppCommission, 0)
   const totalMppCount = monthData.reduce((s, m) => s + m.mppCount, 0)
   const penetration = totalSales > 0 ? Math.round((totalCredits / totalSales) * 100) : 0
+  const activeMonths = monthData.filter(m => m.sales > 0)
+  const avgPenetration = activeMonths.length > 0
+    ? Math.round(activeMonths.reduce((s, m) => s + (m.credits / m.sales) * 100, 0) / activeMonths.length)
+    : 0
 
   const totalInsurance = monthData.reduce((s, m) => s + m.insurance, 0)
   const totalCreditCommission = monthData.reduce((sum, m) => sum + m.dealer / 1.19 * getCreditRate(m.credits), 0)
@@ -130,7 +134,7 @@ export default function DashboardScreen() {
             <View style={[styles.kpiCard, { backgroundColor: penetration >= 70 ? Colors.success : penetration >= 50 ? Colors.accent : '#C0392B' }]}>
               <Text style={styles.kpiLabel}>Penetración crédito</Text>
               <Text style={styles.kpiValue}>{penetration}%</Text>
-              <Text style={styles.kpiSub}>Meta: 70%</Text>
+              <Text style={styles.kpiSub}>Meta promedio: {avgPenetration}%</Text>
             </View>
             <View style={[styles.kpiCard, { backgroundColor: Colors.primary }]}>
               <Text style={styles.kpiLabel}>VPP en el año</Text>
