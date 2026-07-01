@@ -20,6 +20,7 @@ type Sale = {
   requested_date: string | null
   invoiced_date: string | null
   delivery_date: string | null
+  arrival_date: string | null
 }
 
 const SALES_COMMISSION = [
@@ -107,6 +108,7 @@ export default function SalesScreen() {
   const [purchaseType, setPurchaseType] = useState<'R' | 'F' | 'FL' | 'SEG'>('R')
   const [status, setStatus] = useState<'Solicitado' | 'Facturado' | 'Entregado' | null>(null)
   const [requestedDate, setRequestedDate] = useState('')
+  const [arrivalDate, setArrivalDate] = useState('')
   const [invoicedDate, setInvoicedDate] = useState('')
   const [deliveryDate, setDeliveryDate] = useState('')
 
@@ -137,7 +139,7 @@ export default function SalesScreen() {
     const end = new Date(selectedYear, selectedMonth + 1, 0).toISOString().split('T')[0]
 
     const [{ data }, { data: credits }] = await Promise.all([
-      supabase.from('sales').select('id,customer_name,rut,model,chassis,odv,purchase_type,sale_month,status,requested_date,invoiced_date,delivery_date,created_at').eq('user_id', user.id)
+      supabase.from('sales').select('id,customer_name,rut,model,chassis,odv,purchase_type,sale_month,status,requested_date,arrival_date,invoiced_date,delivery_date,created_at').eq('user_id', user.id)
         .gte('sale_month', start).lte('sale_month', end)
         .order('created_at', { ascending: true }),
       supabase.from('credits').select('id').eq('user_id', user.id)
@@ -152,7 +154,7 @@ export default function SalesScreen() {
   function resetForm() {
     setCustomerName(''); setRut(''); setModel(''); setChassis(''); setOdv('')
     setPurchaseType('R'); setStatus(null)
-    setRequestedDate(''); setInvoicedDate(''); setDeliveryDate('')
+    setRequestedDate(''); setArrivalDate(''); setInvoicedDate(''); setDeliveryDate('')
     setError(''); setEditingId(null)
   }
 
@@ -167,6 +169,7 @@ export default function SalesScreen() {
     setPurchaseType(item.purchase_type)
     setStatus(item.status ?? null)
     setRequestedDate(item.requested_date ?? '')
+    setArrivalDate(item.arrival_date ?? '')
     setInvoicedDate(item.invoiced_date ?? '')
     setDeliveryDate(item.delivery_date ?? '')
     setError('')
@@ -184,6 +187,7 @@ export default function SalesScreen() {
     setPurchaseType(item.purchase_type)
     setStatus(item.status ?? null)
     setRequestedDate(item.requested_date ?? '')
+    setArrivalDate(item.arrival_date ?? '')
     setInvoicedDate(item.invoiced_date ?? '')
     setDeliveryDate(item.delivery_date ?? '')
     setError('')
@@ -208,6 +212,7 @@ export default function SalesScreen() {
       customer_name: customerName, rut: formattedRut, model, chassis, odv,
       purchase_type: purchaseType, status: status || null,
       requested_date: requestedDate || null,
+      arrival_date: arrivalDate || null,
       invoiced_date: invoicedDate || null,
       delivery_date: deliveryDate || null,
     }
@@ -445,7 +450,7 @@ export default function SalesScreen() {
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 14 }}>
             <Text style={styles.label}>Estado y fechas</Text>
             {!viewMode && (
-              <TouchableOpacity onPress={() => { setStatus(null); setRequestedDate(''); setInvoicedDate(''); setDeliveryDate('') }}>
+              <TouchableOpacity onPress={() => { setStatus(null); setRequestedDate(''); setArrivalDate(''); setInvoicedDate(''); setDeliveryDate('') }}>
                 <Text style={{ fontSize: 12, color: Colors.textLight, textDecorationLine: 'underline' }}>Limpiar</Text>
               </TouchableOpacity>
             )}
@@ -466,6 +471,12 @@ export default function SalesScreen() {
               </View>
             </View>
           ))}
+          <View style={styles.statusRow}>
+            <Text style={[styles.statusBtn, { textAlignVertical: 'center', paddingTop: 10, fontSize: 12, color: Colors.textLight, borderColor: Colors.border }]}>Fec. Llegada{'\n'}a Suc.</Text>
+            <View style={styles.statusDateInput}>
+              {dateInput(arrivalDate, viewMode ? undefined : setArrivalDate)}
+            </View>
+          </View>
         </ScrollView>
 
         {viewMode ? (
