@@ -178,6 +178,20 @@ export default function PortfolioScreen() {
         {loading ? (
           <ActivityIndicator color={Colors.primary} style={{ marginTop: 60 }} />
         ) : (
+          <>
+            <View style={styles.tableHeader}>
+              <View style={[styles.tableRow, styles.tableHead, { borderRadius: 12, borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }]}>
+                <Text style={[styles.cell, styles.cellN, styles.headCell]}>#</Text>
+                <Text style={[styles.cell, styles.cellName, styles.headCell]}>Cliente</Text>
+                <Text style={[styles.cell, styles.cellRut, styles.headCell]}>RUT</Text>
+                <Text style={[styles.cell, styles.cellModel, styles.headCell]}>Modelo</Text>
+                <Text style={[styles.cell, styles.cellFlag, styles.headCell]}>Crédito</Text>
+                <Text style={[styles.cell, styles.cellYear, styles.headCell]}>Año</Text>
+                <Text style={[styles.cell, styles.cellMonth, styles.headCell]}>Mes</Text>
+                <Text style={[styles.cell, styles.cellFlag, styles.headCell]}>VPP</Text>
+                <Text style={[styles.cell, styles.cellFlag, styles.headCell]}>MPP</Text>
+              </View>
+            </View>
           <ScrollView style={styles.tableContainer}>
             {filtered.length === 0 ? (
               <View style={styles.empty}>
@@ -185,17 +199,6 @@ export default function PortfolioScreen() {
               </View>
             ) : (
               <View style={styles.table}>
-                <View style={[styles.tableRow, styles.tableHead]}>
-                  <Text style={[styles.cell, styles.cellN, styles.headCell]}>#</Text>
-                  <Text style={[styles.cell, styles.cellName, styles.headCell]}>Cliente</Text>
-                  <Text style={[styles.cell, styles.cellRut, styles.headCell]}>RUT</Text>
-                  <Text style={[styles.cell, styles.cellModel, styles.headCell]}>Modelo</Text>
-                  <Text style={[styles.cell, styles.cellFlag, styles.headCell]}>Crédito</Text>
-                  <Text style={[styles.cell, styles.cellYear, styles.headCell]}>Año</Text>
-                  <Text style={[styles.cell, styles.cellMonth, styles.headCell]}>Mes</Text>
-                  <Text style={[styles.cell, styles.cellFlag, styles.headCell]}>VPP</Text>
-                  <Text style={[styles.cell, styles.cellFlag, styles.headCell]}>MPP</Text>
-                </View>
                 {paginated.map((row, index) => (
                   <View key={row.id} style={[styles.tableRow, index % 2 === 0 ? styles.rowEven : styles.rowOdd]}>
                     <Text style={[styles.cell, styles.cellN]}>{(page - 1) * PAGE_SIZE + index + 1}</Text>
@@ -244,6 +247,7 @@ export default function PortfolioScreen() {
               </View>
             )}
           </ScrollView>
+          </>
         )}
       </View>
     </View>
@@ -264,8 +268,9 @@ const styles = StyleSheet.create({
   filtersBar: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 32, paddingBottom: 12 },
   clearBtn: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 8, borderWidth: 1, borderColor: Colors.danger },
   clearBtnText: { fontSize: 12, color: Colors.danger, fontWeight: '600' },
-  tableContainer: { flex: 1, paddingHorizontal: 32, paddingTop: 4 },
-  table: { backgroundColor: Colors.white, borderRadius: 12, overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 6, elevation: 2 },
+  tableHeader: { paddingHorizontal: 32, backgroundColor: Colors.background },
+  tableContainer: { flex: 1, paddingHorizontal: 32 },
+  table: { backgroundColor: Colors.white, borderBottomLeftRadius: 12, borderBottomRightRadius: 12, overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 6, elevation: 2 },
   tableRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16 },
   tableHead: { backgroundColor: Colors.primary },
   rowEven: { backgroundColor: Colors.white },
