@@ -505,7 +505,10 @@ export default function SalesScreen() {
                   <TextInput
                     style={styles.input}
                     value={creditDealer}
-                    onChangeText={setCreditDealer}
+                    onChangeText={v => {
+                      const raw = v.replace(/\./g, '').replace(/[^0-9]/g, '')
+                      setCreditDealer(raw ? Number(raw).toLocaleString('es-CL') : '')
+                    }}
                     placeholder="Monto C.Dealer"
                     placeholderTextColor={Colors.textLight}
                     keyboardType="numeric"
@@ -657,10 +660,10 @@ const styles = StyleSheet.create({
   targetEditRow: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
   targetInput: { backgroundColor: 'rgba(255,255,255,0.25)', color: Colors.white, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2, fontSize: 12, fontWeight: '600', width: 36, textAlign: 'center', outlineStyle: 'none' } as any,
   creditModuleWrapper: { marginTop: 20 },
-  creditToggleBtn: { borderWidth: 1, borderColor: Colors.primary, borderRadius: 8, paddingVertical: 10, alignItems: 'center' },
-  creditToggleBtnText: { color: Colors.primary, fontWeight: '600', fontSize: 14 },
-  creditModule: { marginTop: 12, backgroundColor: '#F8F9FA', borderRadius: 10, padding: 16, borderWidth: 1, borderColor: Colors.border },
+  creditToggleBtn: { borderWidth: 1.5, borderColor: Colors.success, borderRadius: 8, paddingVertical: 10, alignItems: 'center' },
+  creditToggleBtnText: { color: Colors.success, fontWeight: '600', fontSize: 14 },
+  creditModule: { marginTop: 12, backgroundColor: '#F0FAF4', borderRadius: 10, padding: 16, borderWidth: 1, borderColor: Colors.success },
   creditError: { backgroundColor: '#FDECEA', color: Colors.danger, borderRadius: 8, padding: 10, marginBottom: 10, fontSize: 13 },
-  creditSendBtn: { marginTop: 14, backgroundColor: Colors.primary, borderRadius: 8, paddingVertical: 10, alignItems: 'center' },
+  creditSendBtn: { marginTop: 14, backgroundColor: Colors.success, borderRadius: 8, paddingVertical: 10, alignItems: 'center' },
   creditSendBtnText: { color: Colors.white, fontWeight: 'bold', fontSize: 14 },
 })
