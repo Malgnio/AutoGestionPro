@@ -33,6 +33,8 @@ export default function PortfolioScreen() {
   const [filterYear, setFilterYear] = useState<number | null>(null)
   const [filterMonth, setFilterMonth] = useState<number | null>(null)
   const [filterCredit, setFilterCredit] = useState<boolean | null>(null)
+  const [page, setPage] = useState(1)
+  const PAGE_SIZE = 20
 
   useEffect(() => { loadData() }, [])
 
@@ -74,6 +76,7 @@ export default function PortfolioScreen() {
   }
 
   const filtered = useMemo(() => {
+    setPage(1)
     const q = search.toLowerCase().trim()
     return rows.filter(r => {
       const rowYear = new Date(r.sale_month).getUTCFullYear()
@@ -85,6 +88,9 @@ export default function PortfolioScreen() {
       return true
     })
   }, [rows, search, filterYear, filterMonth, filterCredit])
+
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE)
+  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
   const uniqueClients = useMemo(() => {
     const seen = new Set<string>()
@@ -190,9 +196,9 @@ export default function PortfolioScreen() {
                   <Text style={[styles.cell, styles.cellFlag, styles.headCell]}>VPP</Text>
                   <Text style={[styles.cell, styles.cellFlag, styles.headCell]}>MPP</Text>
                 </View>
-                {filtered.map((row, index) => (
+                {paginated.map((row, index) => (
                   <View key={row.id} style={[styles.tableRow, index % 2 === 0 ? styles.rowEven : styles.rowOdd]}>
-                    <Text style={[styles.cell, styles.cellN]}>{index + 1}</Text>
+                    <Text style={[styles.cell, styles.cellN]}>{(page - 1) * PAGE_SIZE + index + 1}</Text>
                     <Text style={[styles.cell, styles.cellName]}>{row.customer_name}</Text>
                     <Text style={[styles.cell, styles.cellRut]}>{formatRut(row.rut)}</Text>
                     <Text style={[styles.cell, styles.cellModel]} numberOfLines={1}>{row.model}</Text>
@@ -215,6 +221,26 @@ export default function PortfolioScreen() {
                     </View>
                   </View>
                 ))}
+              </View>
+            )}
+
+            {totalPages > 1 && (
+              <View style={styles.pagination}>
+                <TouchableOpacity
+                  style={[styles.pageBtn, page === 1 && styles.pageBtnDisabled]}
+                  onPress={() => setPage(p => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                >
+                  <Text style={[styles.pageBtnText, page === 1 && styles.pageBtnTextDisabled]}>‹ Anterior</Text>
+                </TouchableOpacity>
+                <Text style={styles.pageInfo}>Página {page} de {totalPages} · {filtered.length} registros</Text>
+                <TouchableOpacity
+                  style={[styles.pageBtn, page === totalPages && styles.pageBtnDisabled]}
+                  onPress={() => setPage(p => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                >
+                  <Text style={[styles.pageBtnText, page === totalPages && styles.pageBtnTextDisabled]}>Siguiente ›</Text>
+                </TouchableOpacity>
               </View>
             )}
           </ScrollView>
@@ -257,4 +283,10 @@ const styles = StyleSheet.create({
   badgeText: { color: Colors.white, fontSize: 11, fontWeight: '600' },
   empty: { alignItems: 'center', padding: 60 },
   emptyText: { color: Colors.textLight, fontSize: 15 },
+  pagination: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 16, paddingHorizontal: 4 },
+  pageBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8, borderWidth: 1, borderColor: Colors.primary },
+  pageBtnDisabled: { borderColor: Colors.border },
+  pageBtnText: { fontSize: 13, fontWeight: '600', color: Colors.primary },
+  pageBtnTextDisabled: { color: Colors.textLight },
+  pageInfo: { fontSize: 13, color: Colors.textLight },
 })
