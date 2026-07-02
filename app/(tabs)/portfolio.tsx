@@ -43,9 +43,11 @@ export default function PortfolioScreen() {
       supabase.from('mpp').select('rut').eq('user_id', user.id).gte('sale_month', start).lte('sale_month', end),
     ])
 
-    const creditRuts = new Set(credits?.map(c => c.rut) ?? [])
-    const vppRuts = new Set(vpp?.map(v => v.rut) ?? [])
-    const mppRuts = new Set(mpp?.map(m => m.rut) ?? [])
+    const norm = (r: string) => r.replace(/\./g, '').toLowerCase()
+
+    const creditRuts = new Set(credits?.map(c => norm(c.rut)) ?? [])
+    const vppRuts = new Set(vpp?.map(v => norm(v.rut)) ?? [])
+    const mppRuts = new Set(mpp?.map(m => norm(m.rut)) ?? [])
 
     setRows((sales ?? []).map(s => ({
       id: s.id,
@@ -53,9 +55,9 @@ export default function PortfolioScreen() {
       rut: s.rut,
       model: s.model,
       sale_month: s.sale_month,
-      hasCredit: creditRuts.has(s.rut),
-      hasVpp: vppRuts.has(s.rut),
-      hasMpp: mppRuts.has(s.rut),
+      hasCredit: creditRuts.has(norm(s.rut)),
+      hasVpp: vppRuts.has(norm(s.rut)),
+      hasMpp: mppRuts.has(norm(s.rut)),
     })))
     setLoading(false)
   }
