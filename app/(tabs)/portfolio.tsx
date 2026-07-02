@@ -1,12 +1,13 @@
 import { useEffect, useState, useMemo } from 'react'
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TextInput } from 'react-native'
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native'
 import { supabase } from '../../lib/supabase'
 import { Colors } from '../../constants/colors'
-import { usePeriod } from '../../contexts/PeriodContext'
 import AlertBell from '../../components/AlertBell'
 import { formatRut } from '../../lib/validateRut'
 
 const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+const CURRENT_YEAR = new Date().getFullYear()
+const YEARS = [CURRENT_YEAR - 2, CURRENT_YEAR - 1, CURRENT_YEAR]
 
 type PortfolioRow = {
   id: string
@@ -20,20 +21,24 @@ type PortfolioRow = {
 }
 
 export default function PortfolioScreen() {
-  const { selectedYear } = usePeriod()
   const [rows, setRows] = useState<PortfolioRow[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [filterYear, setFilterYear] = useState<number | null>(null)
+  const [filterMonth, setFilterMonth] = useState<number | null>(null)
+  const [filterCredit, setFilterCredit] = useState<boolean | null>(null)
 
-  useEffect(() => { loadData() }, [selectedYear])
+  useEffect(() => { loadData() }, [])
 
   async function loadData() {
     setLoading(true)
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
-    const start = `${selectedYear}-01-01`
-    const end = `${selectedYear}-12-31`
+    // Carga todos los años disponibles (desde el más antiguo disponible)
+    const startYear = CURRENT_YEAR - 2
+    const start = `${startYear}-01-01`
+    const end = `${CURRENT_YEAR}-12-31`
 
     const [{ data: sales }, { data: credits }, { data: vpp }, { data: mpp }] = await Promise.all([
       supabase.from('sales').select('id, customer_name, rut, model, sale_month')
@@ -45,7 +50,6 @@ export default function PortfolioScreen() {
     ])
 
     const norm = (r: string) => r.replace(/\./g, '').toLowerCase()
-
     const creditRuts = new Set(credits?.map(c => norm(c.rut)) ?? [])
     const vppRuts = new Set(vpp?.map(v => norm(v.rut)) ?? [])
     const mppRuts = new Set(mpp?.map(m => norm(m.rut)) ?? [])
@@ -63,58 +67,134 @@ export default function PortfolioScreen() {
     setLoading(false)
   }
 
-  const uniqueClients = useMemo(() => {
-    const seen = new Set<string>()
-    return rows.filter(r => { if (seen.has(r.rut)) return false; seen.add(r.rut); return true })
-  }, [rows])
-
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim()
-    if (!q) return rows
-    return rows.filter(r =>
-      r.customer_name.toLowerCase().includes(q) || r.rut.toLowerCase().includes(q)
-    )
-  }, [rows, search])
+    return rows.filter(r => {
+      const rowYear = new Date(r.sale_month).getUTCFullYear()
+      const rowMonth = new Date(r.sale_month).getUTCMonth()
+      if (filterYear !== null && rowYear !== filterYear) return false
+      if (filterMonth !== null && rowMonth !== filterMonth) return false
+      if (filterCredit !== null && r.hasCredit !== filterCredit) return false
+      if (q && !r.customer_name.toLowerCase().includes(q) && !r.rut.toLowerCase().includes(q)) return false
+      return true
+    })
+  }, [rows, search, filterYear, filterMonth, filterCredit])
 
-  function getSaleMonth(dateStr: string) {
-    return MONTHS[new Date(dateStr).getUTCMonth()]
-  }
+  const uniqueClients = useMemo(() => {
+    const seen = new Set<string>()
+    return filtered.filter(r => { if (seen.has(r.rut)) return false; seen.add(r.rut); return true }).length
+  }, [filtered])
 
-  function getSaleYear(dateStr: string) {
-    return new Date(dateStr).getUTCFullYear()
-  }
+  const hasActiveFilter = search || filterYear !== null || filterMonth !== null || filterCredit !== null
 
   return (
     <View style={styles.container}>
       <View style={styles.main}>
         <View style={styles.header}>
-          <Text style={styles.pageTitle}>Cartera de Clientes — {selectedYear}</Text>
+          <Text style={styles.pageTitle}>Cartera de Clientes</Text>
           <AlertBell />
         </View>
 
         {!loading && (
-          <View style={styles.topBar}>
-            <View style={[styles.kpiCard, { backgroundColor: Colors.primary }]}>
-              <Text style={styles.kpiLabel}>Clientes únicos</Text>
-              <Text style={styles.kpiValue}>{uniqueClients.length}</Text>
-              <Text style={styles.kpiSub}>{rows.length} ventas en el año</Text>
+          <>
+            {/* KPI + búsqueda */}
+            <View style={styles.topBar}>
+              <View style={[styles.kpiCard, { backgroundColor: Colors.primary }]}>
+                <Text style={styles.kpiLabel}>Clientes únicos</Text>
+                <Text style={styles.kpiValue}>{uniqueClients}</Text>
+                <Text style={styles.kpiSub}>{filtered.length} ventas mostradas</Text>
+              </View>
+              <View style={styles.searchWrapper}>
+                {/* @ts-ignore */}
+                <input
+                  type="text"
+                  placeholder="Buscar por nombre o RUT..."
+                  value={search}
+                  onChange={(e: any) => setSearch(e.target.value)}
+                  style={{
+                    width: '100%', padding: '10px 14px', fontSize: 14,
+                    border: `1px solid ${Colors.border}`, borderRadius: 8,
+                    fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
+                    color: Colors.text, backgroundColor: Colors.white,
+                  } as any}
+                />
+              </View>
             </View>
-            <View style={styles.searchWrapper}>
-              {/* @ts-ignore */}
-              <input
-                type="text"
-                placeholder="Buscar por nombre o RUT..."
-                value={search}
-                onChange={(e: any) => setSearch(e.target.value)}
-                style={{
-                  width: '100%', padding: '10px 14px', fontSize: 14,
-                  border: `1px solid ${Colors.border}`, borderRadius: 8,
-                  fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box',
-                  color: Colors.text, backgroundColor: Colors.white,
-                } as any}
-              />
+
+            {/* Filtros */}
+            <View style={styles.filtersBar}>
+              {/* Año */}
+              <View style={styles.filterGroup}>
+                <Text style={styles.filterLabel}>Año</Text>
+                <View style={styles.filterBtns}>
+                  <TouchableOpacity
+                    style={[styles.filterBtn, filterYear === null && styles.filterBtnActive]}
+                    onPress={() => setFilterYear(null)}
+                  >
+                    <Text style={[styles.filterBtnText, filterYear === null && styles.filterBtnTextActive]}>Todos</Text>
+                  </TouchableOpacity>
+                  {YEARS.map(y => (
+                    <TouchableOpacity
+                      key={y}
+                      style={[styles.filterBtn, filterYear === y && styles.filterBtnActive]}
+                      onPress={() => setFilterYear(filterYear === y ? null : y)}
+                    >
+                      <Text style={[styles.filterBtnText, filterYear === y && styles.filterBtnTextActive]}>{y}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              {/* Mes */}
+              <View style={styles.filterGroup}>
+                <Text style={styles.filterLabel}>Mes</Text>
+                <View style={styles.filterBtns}>
+                  <TouchableOpacity
+                    style={[styles.filterBtn, filterMonth === null && styles.filterBtnActive]}
+                    onPress={() => setFilterMonth(null)}
+                  >
+                    <Text style={[styles.filterBtnText, filterMonth === null && styles.filterBtnTextActive]}>Todos</Text>
+                  </TouchableOpacity>
+                  {MONTHS.map((m, i) => (
+                    <TouchableOpacity
+                      key={i}
+                      style={[styles.filterBtn, filterMonth === i && styles.filterBtnActive]}
+                      onPress={() => setFilterMonth(filterMonth === i ? null : i)}
+                    >
+                      <Text style={[styles.filterBtnText, filterMonth === i && styles.filterBtnTextActive]}>{m.slice(0, 3)}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              {/* Crédito */}
+              <View style={styles.filterGroup}>
+                <Text style={styles.filterLabel}>Crédito</Text>
+                <View style={styles.filterBtns}>
+                  {([null, true, false] as (boolean | null)[]).map((v, i) => (
+                    <TouchableOpacity
+                      key={i}
+                      style={[styles.filterBtn, filterCredit === v && styles.filterBtnActive]}
+                      onPress={() => setFilterCredit(filterCredit === v ? null : v)}
+                    >
+                      <Text style={[styles.filterBtnText, filterCredit === v && styles.filterBtnTextActive]}>
+                        {v === null ? 'Todos' : v ? 'Sí' : 'No'}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+
+              {hasActiveFilter && (
+                <TouchableOpacity
+                  style={styles.clearBtn}
+                  onPress={() => { setSearch(''); setFilterYear(null); setFilterMonth(null); setFilterCredit(null) }}
+                >
+                  <Text style={styles.clearBtnText}>Limpiar filtros</Text>
+                </TouchableOpacity>
+              )}
             </View>
-          </View>
+          </>
         )}
 
         {loading ? (
@@ -123,9 +203,7 @@ export default function PortfolioScreen() {
           <ScrollView style={styles.tableContainer}>
             {filtered.length === 0 ? (
               <View style={styles.empty}>
-                <Text style={styles.emptyText}>
-                  {search ? 'Sin resultados para esa búsqueda' : `No hay ventas en ${selectedYear}`}
-                </Text>
+                <Text style={styles.emptyText}>Sin resultados para los filtros aplicados</Text>
               </View>
             ) : (
               <View style={styles.table}>
@@ -151,8 +229,8 @@ export default function PortfolioScreen() {
                         <Text style={styles.badgeText}>{row.hasCredit ? 'Sí' : 'No'}</Text>
                       </View>
                     </View>
-                    <Text style={[styles.cell, styles.cellYear]}>{getSaleYear(row.sale_month)}</Text>
-                    <Text style={[styles.cell, styles.cellMonth]}>{getSaleMonth(row.sale_month)}</Text>
+                    <Text style={[styles.cell, styles.cellYear]}>{new Date(row.sale_month).getUTCFullYear()}</Text>
+                    <Text style={[styles.cell, styles.cellMonth]}>{MONTHS[new Date(row.sale_month).getUTCMonth()]}</Text>
                     <View style={[styles.cell, styles.cellFlag]}>
                       <View style={[styles.badge, { backgroundColor: row.hasVpp ? Colors.success : '#BDC3C7' }]}>
                         <Text style={styles.badgeText}>{row.hasVpp ? 'Sí' : 'No'}</Text>
@@ -185,6 +263,16 @@ const styles = StyleSheet.create({
   kpiValue: { fontSize: 28, fontWeight: 'bold', color: Colors.white, marginBottom: 2 },
   kpiSub: { fontSize: 12, color: 'rgba(255,255,255,0.7)' },
   searchWrapper: { flex: 1 },
+  filtersBar: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-end', gap: 16, paddingHorizontal: 32, paddingBottom: 12 },
+  filterGroup: { gap: 6 },
+  filterLabel: { fontSize: 11, color: Colors.textLight, fontWeight: '600', textTransform: 'uppercase' },
+  filterBtns: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
+  filterBtn: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.white },
+  filterBtnActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
+  filterBtnText: { fontSize: 12, color: Colors.textLight, fontWeight: '500' },
+  filterBtnTextActive: { color: Colors.white, fontWeight: '600' },
+  clearBtn: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 6, borderWidth: 1, borderColor: Colors.danger, alignSelf: 'flex-end' },
+  clearBtnText: { fontSize: 12, color: Colors.danger, fontWeight: '600' },
   tableContainer: { flex: 1, paddingHorizontal: 32, paddingTop: 4 },
   table: { backgroundColor: Colors.white, borderRadius: 12, overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 6, elevation: 2 },
   tableRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16 },
