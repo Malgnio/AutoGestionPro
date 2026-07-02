@@ -84,7 +84,7 @@ export default function PortfolioScreen() {
       if (filterYear !== null && rowYear !== filterYear) return false
       if (filterMonth !== null && rowMonth !== filterMonth) return false
       if (filterCredit !== null && r.hasCredit !== filterCredit) return false
-      if (q && !r.customer_name.toLowerCase().includes(q) && !formatRut(r.rut).toLowerCase().includes(q)) return false
+      if (q && !r.customer_name.toLowerCase().includes(q) && !formatRut(r.rut).toLowerCase().startsWith(q)) return false
       return true
     })
   }, [rows, search, filterYear, filterMonth, filterCredit])
