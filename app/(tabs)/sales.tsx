@@ -486,7 +486,7 @@ export default function SalesScreen() {
             ))}
           </View>
 
-          {!viewMode && editingId && (
+          {!viewMode && (
             <View style={styles.creditModuleWrapper}>
               <TouchableOpacity
                 style={[styles.creditToggleBtn, creditSent && { backgroundColor: Colors.success, borderColor: Colors.success }]}
