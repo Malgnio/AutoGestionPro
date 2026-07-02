@@ -9,6 +9,12 @@ const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 
 const CURRENT_YEAR = new Date().getFullYear()
 const YEARS = [CURRENT_YEAR - 2, CURRENT_YEAR - 1, CURRENT_YEAR]
 
+const selectStyle = {
+  padding: '8px 12px', fontSize: 13, borderRadius: 8,
+  border: `1px solid ${Colors.border}`, backgroundColor: Colors.white,
+  color: Colors.text, fontFamily: 'inherit', outline: 'none', cursor: 'pointer',
+} as any
+
 type PortfolioRow = {
   id: string
   customer_name: string
@@ -123,74 +129,40 @@ export default function PortfolioScreen() {
 
             {/* Filtros */}
             <View style={styles.filtersBar}>
-              {/* Año */}
-              <View style={styles.filterGroup}>
-                <Text style={styles.filterLabel}>Año</Text>
-                <View style={styles.filterBtns}>
-                  <TouchableOpacity
-                    style={[styles.filterBtn, filterYear === null && styles.filterBtnActive]}
-                    onPress={() => setFilterYear(null)}
-                  >
-                    <Text style={[styles.filterBtnText, filterYear === null && styles.filterBtnTextActive]}>Todos</Text>
-                  </TouchableOpacity>
-                  {YEARS.map(y => (
-                    <TouchableOpacity
-                      key={y}
-                      style={[styles.filterBtn, filterYear === y && styles.filterBtnActive]}
-                      onPress={() => setFilterYear(filterYear === y ? null : y)}
-                    >
-                      <Text style={[styles.filterBtnText, filterYear === y && styles.filterBtnTextActive]}>{y}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-
-              {/* Mes */}
-              <View style={styles.filterGroup}>
-                <Text style={styles.filterLabel}>Mes</Text>
-                <View style={styles.filterBtns}>
-                  <TouchableOpacity
-                    style={[styles.filterBtn, filterMonth === null && styles.filterBtnActive]}
-                    onPress={() => setFilterMonth(null)}
-                  >
-                    <Text style={[styles.filterBtnText, filterMonth === null && styles.filterBtnTextActive]}>Todos</Text>
-                  </TouchableOpacity>
-                  {MONTHS.map((m, i) => (
-                    <TouchableOpacity
-                      key={i}
-                      style={[styles.filterBtn, filterMonth === i && styles.filterBtnActive]}
-                      onPress={() => setFilterMonth(filterMonth === i ? null : i)}
-                    >
-                      <Text style={[styles.filterBtnText, filterMonth === i && styles.filterBtnTextActive]}>{m.slice(0, 3)}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-
-              {/* Crédito */}
-              <View style={styles.filterGroup}>
-                <Text style={styles.filterLabel}>Crédito</Text>
-                <View style={styles.filterBtns}>
-                  {([null, true, false] as (boolean | null)[]).map((v, i) => (
-                    <TouchableOpacity
-                      key={i}
-                      style={[styles.filterBtn, filterCredit === v && styles.filterBtnActive]}
-                      onPress={() => setFilterCredit(filterCredit === v ? null : v)}
-                    >
-                      <Text style={[styles.filterBtnText, filterCredit === v && styles.filterBtnTextActive]}>
-                        {v === null ? 'Todos' : v ? 'Sí' : 'No'}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
-
+              {/* @ts-ignore */}
+              <select
+                value={filterYear ?? ''}
+                onChange={(e: any) => setFilterYear(e.target.value ? Number(e.target.value) : null)}
+                style={selectStyle}
+              >
+                <option value="">Todos los años</option>
+                {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+              </select>
+              {/* @ts-ignore */}
+              <select
+                value={filterMonth ?? ''}
+                onChange={(e: any) => setFilterMonth(e.target.value !== '' ? Number(e.target.value) : null)}
+                style={selectStyle}
+              >
+                <option value="">Todos los meses</option>
+                {MONTHS.map((m, i) => <option key={i} value={i}>{m}</option>)}
+              </select>
+              {/* @ts-ignore */}
+              <select
+                value={filterCredit === null ? '' : filterCredit ? 'si' : 'no'}
+                onChange={(e: any) => setFilterCredit(e.target.value === '' ? null : e.target.value === 'si')}
+                style={selectStyle}
+              >
+                <option value="">Crédito: Todos</option>
+                <option value="si">Crédito: Sí</option>
+                <option value="no">Crédito: No</option>
+              </select>
               {hasActiveFilter && (
                 <TouchableOpacity
                   style={styles.clearBtn}
                   onPress={() => { setSearch(''); setFilterYear(null); setFilterMonth(null); setFilterCredit(null) }}
                 >
-                  <Text style={styles.clearBtnText}>Limpiar filtros</Text>
+                  <Text style={styles.clearBtnText}>Limpiar</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -263,15 +235,8 @@ const styles = StyleSheet.create({
   kpiValue: { fontSize: 28, fontWeight: 'bold', color: Colors.white, marginBottom: 2 },
   kpiSub: { fontSize: 12, color: 'rgba(255,255,255,0.7)' },
   searchWrapper: { flex: 1 },
-  filtersBar: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'flex-end', gap: 16, paddingHorizontal: 32, paddingBottom: 12 },
-  filterGroup: { gap: 6 },
-  filterLabel: { fontSize: 11, color: Colors.textLight, fontWeight: '600', textTransform: 'uppercase' },
-  filterBtns: { flexDirection: 'row', flexWrap: 'wrap', gap: 4 },
-  filterBtn: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 6, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.white },
-  filterBtnActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  filterBtnText: { fontSize: 12, color: Colors.textLight, fontWeight: '500' },
-  filterBtnTextActive: { color: Colors.white, fontWeight: '600' },
-  clearBtn: { paddingHorizontal: 12, paddingVertical: 5, borderRadius: 6, borderWidth: 1, borderColor: Colors.danger, alignSelf: 'flex-end' },
+  filtersBar: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingHorizontal: 32, paddingBottom: 12 },
+  clearBtn: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 8, borderWidth: 1, borderColor: Colors.danger },
   clearBtnText: { fontSize: 12, color: Colors.danger, fontWeight: '600' },
   tableContainer: { flex: 1, paddingHorizontal: 32, paddingTop: 4 },
   table: { backgroundColor: Colors.white, borderRadius: 12, overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 6, elevation: 2 },
