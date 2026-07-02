@@ -486,32 +486,6 @@ export default function SalesScreen() {
             ))}
           </View>
 
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 14 }}>
-            <Text style={styles.label}>Estado y fechas</Text>
-            {!viewMode && (
-              <TouchableOpacity onPress={() => { setStatus(null); setRequestedDate(''); setArrivalDate(''); setInvoicedDate(''); setDeliveryDate('') }}>
-                <Text style={{ fontSize: 12, color: Colors.textLight, textDecorationLine: 'underline' }}>Limpiar</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-          {STATUSES.map(s => (
-            <View key={s} style={styles.statusRow}>
-              <TouchableOpacity
-                style={[styles.statusBtn, status === s && { backgroundColor: STATUS_COLOR[s], borderColor: STATUS_COLOR[s] }]}
-                onPress={() => { if (!viewMode) setStatus(status === s ? null : s) }}
-                activeOpacity={viewMode ? 1 : 0.7}
-              >
-                <Text style={[styles.typeBtnText, styles.statusBtnText, status === s && styles.typeBtnTextActive]}>{s}</Text>
-              </TouchableOpacity>
-              <View style={styles.statusDateInput}>
-                {s === 'Solicitado' && dateInput(requestedDate, viewMode ? undefined : setRequestedDate)}
-                {s === 'Llegada Suc.' && dateInput(arrivalDate, viewMode ? undefined : setArrivalDate)}
-                {s === 'Facturado' && dateInput(invoicedDate, viewMode ? undefined : setInvoicedDate)}
-                {s === 'Entregado' && dateInput(deliveryDate, viewMode ? undefined : setDeliveryDate)}
-              </View>
-            </View>
-          ))}
-
           {!viewMode && editingId && (
             <View style={styles.creditModuleWrapper}>
               <TouchableOpacity
@@ -557,6 +531,32 @@ export default function SalesScreen() {
               )}
             </View>
           )}
+
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 14 }}>
+            <Text style={styles.label}>Estado y fechas</Text>
+            {!viewMode && (
+              <TouchableOpacity onPress={() => { setStatus(null); setRequestedDate(''); setArrivalDate(''); setInvoicedDate(''); setDeliveryDate('') }}>
+                <Text style={{ fontSize: 12, color: Colors.textLight, textDecorationLine: 'underline' }}>Limpiar</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+          {STATUSES.map(s => (
+            <View key={s} style={styles.statusRow}>
+              <TouchableOpacity
+                style={[styles.statusBtn, status === s && { backgroundColor: STATUS_COLOR[s], borderColor: STATUS_COLOR[s] }]}
+                onPress={() => { if (!viewMode) setStatus(status === s ? null : s) }}
+                activeOpacity={viewMode ? 1 : 0.7}
+              >
+                <Text style={[styles.typeBtnText, styles.statusBtnText, status === s && styles.typeBtnTextActive]}>{s}</Text>
+              </TouchableOpacity>
+              <View style={styles.statusDateInput}>
+                {s === 'Solicitado' && dateInput(requestedDate, viewMode ? undefined : setRequestedDate)}
+                {s === 'Llegada Suc.' && dateInput(arrivalDate, viewMode ? undefined : setArrivalDate)}
+                {s === 'Facturado' && dateInput(invoicedDate, viewMode ? undefined : setInvoicedDate)}
+                {s === 'Entregado' && dateInput(deliveryDate, viewMode ? undefined : setDeliveryDate)}
+              </View>
+            </View>
+          ))}
         </ScrollView>
 
         {viewMode ? (
