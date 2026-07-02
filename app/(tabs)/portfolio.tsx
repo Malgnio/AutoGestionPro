@@ -103,7 +103,7 @@ export default function PortfolioScreen() {
     <View style={styles.container}>
       <View style={styles.main}>
         <View style={styles.header}>
-          <Text style={styles.pageTitle}>Cartera de Clientes</Text>
+          <Text style={styles.pageTitle}>Clientes</Text>
           <AlertBell />
         </View>
 
