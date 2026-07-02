@@ -172,9 +172,31 @@ transition: 'transform 0.3s ease'
 - Modo ventas: usa `ClientSearch` como siempre
 
 ## Dashboard — KPIs y tooltip mensual
-- KPIs anuales: Ventas, Créditos, VPP, MPP, **Seguros** (card naranja con comisión total)
+- KPIs anuales en orden: Ventas, Créditos, Penetración, Seguros, VPP, MPP
+- "Meta promedio" en tarjeta Penetración = promedio de metas configuradas en tabla `targets` (default 70% si no hay registro)
 - Al hover sobre cada barra muestra: Ventas, Créditos, VPP, MPP, Seguros y Comisión total del mes
 - Seguros incluidos en query del dashboard y en cálculo de comisión total ($23.000 × cantidad)
+
+## Ventas — Módulo "Compra con Crédito"
+- Botón "+ Compra con Crédito" en el drawer de ventas, debajo de "Tipo de compra"
+- Al hacer clic despliega módulo con campos C.Dealer (formato miles automático) y Tipo (CI/CC)
+- Botón "Enviar" inserta registro en tabla `credits` con los datos del cliente de la venta
+- Si ya existe un crédito para ese RUT en el mismo mes → muestra error, no duplica
+- Tras envío exitoso: botón cambia a "✓ Crédito enviado" en verde, no se puede reabrir
+- Módulo visible tanto en nueva venta como al editar
+- Colores del módulo: verde (borde, fondo #F0FAF4, botón Enviar)
+
+## Pantalla Clientes (portfolio.tsx)
+- Ruta: `/(tabs)/portfolio` — sidebar: "Clientes" (👤), entre MPP y Sueldo
+- Carga datos de los últimos 3 años (año actual - 2 hasta año actual)
+- Tabla con columnas: #, Cliente, RUT (con puntos vía `formatRut`), Modelo, Crédito (Sí/No), Año, Mes, VPP (Sí/No), MPP (Sí/No)
+- Sí/No se determina por RUT normalizado (sin puntos) en las tablas credits/vpp/mpp del mismo año
+- Header de tabla fijo (fuera del ScrollView) — no hace scroll con las filas
+- **Filtros**: dropdown Año (Todos/2024/2025/2026), Mes (Todos + 12 meses), Crédito (Todos/Sí/No)
+- **Búsqueda**: por nombre (contains) o RUT (startsWith sobre RUT formateado con puntos)
+- **Paginación**: 20 filas por página, se resetea al cambiar filtros
+- **KPI**: tarjeta azul con clientes únicos por RUT (deduplicados del resultado filtrado) + total ventas mostradas
+- Botón "Limpiar" aparece solo cuando hay filtro activo
 
 ## Recuperar contraseña
 - Link "¿Olvidaste tu contraseña?" en pantalla de login
@@ -188,6 +210,7 @@ transition: 'transform 0.3s ease'
 - **v1.0.0** — Release oficial inicial (tag en GitHub, 2026-06-21)
 - **v1.1.0** — Sistema de alertas + PeriodContext global (tag en GitHub, 2026-06-27)
 - **Sin tag** — (2026-07-01): modo vista 👁️ en todas las grillas, MPP ingreso manual, dashboard Seguros KPI, meta penetración editable, estado "Llegada Suc." en ventas
+- **Sin tag** — (2026-07-02): pantalla Clientes, módulo "Compra con Crédito" en ventas, fix título case con acentos, fix Meta promedio dashboard, reorden KPIs dashboard
 
 ## Pendiente
 - Verificar políticas UPDATE en otras tablas (credits, insurance, vpp, mpp) — sales ya tiene la suya
