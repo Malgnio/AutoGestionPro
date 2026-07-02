@@ -143,6 +143,11 @@ export default function DashboardScreen() {
               <Text style={styles.kpiValue}>{penetration}%</Text>
               <Text style={styles.kpiSub}>Meta promedio: {avgTarget}%</Text>
             </View>
+            <View style={[styles.kpiCard, { backgroundColor: '#E67E22' }]}>
+              <Text style={styles.kpiLabel}>Seguros en el año</Text>
+              <Text style={styles.kpiValue}>{totalInsurance}</Text>
+              <Text style={styles.kpiSub}>${totalInsuranceCommission.toLocaleString('es-CL')} comisión</Text>
+            </View>
             <View style={[styles.kpiCard, { backgroundColor: Colors.primary }]}>
               <Text style={styles.kpiLabel}>VPP en el año</Text>
               <Text style={styles.kpiValue}>{totalVpp}</Text>
@@ -152,11 +157,6 @@ export default function DashboardScreen() {
               <Text style={styles.kpiLabel}>MPP en el año</Text>
               <Text style={styles.kpiValue}>{totalMppCount}</Text>
               <Text style={styles.kpiSub}>${totalMppCommission.toLocaleString('es-CL')} comisión</Text>
-            </View>
-            <View style={[styles.kpiCard, { backgroundColor: '#E67E22' }]}>
-              <Text style={styles.kpiLabel}>Seguros en el año</Text>
-              <Text style={styles.kpiValue}>{totalInsurance}</Text>
-              <Text style={styles.kpiSub}>${totalInsuranceCommission.toLocaleString('es-CL')} comisión</Text>
             </View>
           </View>
 
