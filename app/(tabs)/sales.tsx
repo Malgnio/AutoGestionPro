@@ -398,7 +398,7 @@ export default function SalesScreen() {
           <Text style={styles.label}>Nombre cliente</Text>
           {viewMode
             ? <Text style={styles.viewValue}>{customerName}</Text>
-            : <TextInput style={styles.input} value={customerName} onChangeText={v => setCustomerName(v.replace(/\b\w/g, c => c.toUpperCase()).replace(/\B\w/g, c => c.toLowerCase()))} placeholderTextColor={Colors.textLight} placeholder="Nombre completo" />
+            : <TextInput style={styles.input} value={customerName} onChangeText={v => setCustomerName(v.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' '))} placeholderTextColor={Colors.textLight} placeholder="Nombre completo" />
           }
 
           <Text style={styles.label}>RUT</Text>
