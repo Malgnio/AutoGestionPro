@@ -103,11 +103,18 @@ export default function SalesScreen() {
   const [chassis, setChassis] = useState('')
   const [odv, setOdv] = useState('')
   const [purchaseType, setPurchaseType] = useState<'R' | 'F' | 'FL' | 'SEG'>('R')
-  const [status, setStatus] = useState<'Solicitado' | 'Facturado' | 'Entregado' | null>(null)
+  const [status, setStatus] = useState<'Solicitado' | 'Llegada Suc.' | 'Facturado' | 'Entregado' | null>(null)
   const [requestedDate, setRequestedDate] = useState('')
   const [arrivalDate, setArrivalDate] = useState('')
   const [invoicedDate, setInvoicedDate] = useState('')
   const [deliveryDate, setDeliveryDate] = useState('')
+
+  const [showCreditModule, setShowCreditModule] = useState(false)
+  const [creditDealer, setCreditDealer] = useState('')
+  const [creditType, setCreditType] = useState<'CI' | 'CC'>('CI')
+  const [creditError, setCreditError] = useState('')
+  const [creditSaving, setCreditSaving] = useState(false)
+  const [creditSent, setCreditSent] = useState(false)
 
   useEffect(() => { loadSales(); loadTarget() }, [selectedYear, selectedMonth])
 
@@ -153,6 +160,41 @@ export default function SalesScreen() {
     setPurchaseType('R'); setStatus(null)
     setRequestedDate(''); setArrivalDate(''); setInvoicedDate(''); setDeliveryDate('')
     setError(''); setEditingId(null)
+    setShowCreditModule(false); setCreditDealer(''); setCreditType('CI')
+    setCreditError(''); setCreditSent(false)
+  }
+
+  async function handleSendCredit() {
+    if (!creditDealer || isNaN(Number(creditDealer.replace(/\./g, '').replace(',', '.')))) {
+      setCreditError('Ingresa un monto válido para C.Dealer'); return
+    }
+    setCreditSaving(true); setCreditError('')
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { setCreditSaving(false); return }
+    const saleMonth = new Date(selectedYear, selectedMonth, 1).toISOString().split('T')[0]
+    // Verificar duplicado por RUT + mes
+    const { data: existing } = await supabase.from('credits').select('id')
+      .eq('user_id', user.id).eq('rut', formatRut(rut)).eq('sale_month', saleMonth).maybeSingle()
+    if (existing) {
+      setCreditError('Ya existe un crédito registrado para este cliente en el mes actual')
+      setCreditSaving(false); return
+    }
+    const dealerValue = Number(creditDealer.replace(/\./g, '').replace(',', '.'))
+    const { error: err } = await supabase.from('credits').insert({
+      user_id: user.id,
+      customer_name: customerName,
+      rut: formatRut(rut),
+      dealer_cost: dealerValue,
+      credit_type: creditType,
+      sale_month: saleMonth,
+    })
+    setCreditSaving(false)
+    if (err) { setCreditError(err.message) } else {
+      setCreditSent(true)
+      setShowCreditModule(false)
+      setCreditDealer(''); setCreditType('CI')
+      loadSales()
+    }
   }
 
   function openEdit(item: Sale) {
@@ -469,6 +511,52 @@ export default function SalesScreen() {
               </View>
             </View>
           ))}
+
+          {!viewMode && editingId && (
+            <View style={styles.creditModuleWrapper}>
+              <TouchableOpacity
+                style={[styles.creditToggleBtn, creditSent && { backgroundColor: Colors.success, borderColor: Colors.success }]}
+                onPress={() => { if (!creditSent) { setShowCreditModule(!showCreditModule); setCreditError('') } }}
+                activeOpacity={creditSent ? 1 : 0.7}
+              >
+                <Text style={[styles.creditToggleBtnText, creditSent && { color: Colors.white }]}>
+                  {creditSent ? '✓ Crédito enviado' : '+ Compra con Crédito'}
+                </Text>
+              </TouchableOpacity>
+
+              {showCreditModule && (
+                <View style={styles.creditModule}>
+                  {creditError ? <Text style={styles.creditError}>{creditError}</Text> : null}
+                  <Text style={styles.label}>C.Dealer</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={creditDealer}
+                    onChangeText={setCreditDealer}
+                    placeholder="Monto C.Dealer"
+                    placeholderTextColor={Colors.textLight}
+                    keyboardType="numeric"
+                  />
+                  <Text style={styles.label}>Tipo</Text>
+                  <View style={styles.typeRow}>
+                    {(['CI', 'CC'] as const).map(t => (
+                      <TouchableOpacity
+                        key={t}
+                        style={[styles.typeBtn, creditType === t && styles.typeBtnActive]}
+                        onPress={() => setCreditType(t)}
+                      >
+                        <Text style={[styles.typeBtnText, creditType === t && styles.typeBtnTextActive]}>
+                          {t === 'CI' ? 'Crédito Inteligente' : 'Crédito Convencional'}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                  <TouchableOpacity style={styles.creditSendBtn} onPress={handleSendCredit} disabled={creditSaving}>
+                    {creditSaving ? <ActivityIndicator color={Colors.white} size="small" /> : <Text style={styles.creditSendBtnText}>Enviar</Text>}
+                  </TouchableOpacity>
+                </View>
+              )}
+            </View>
+          )}
         </ScrollView>
 
         {viewMode ? (
@@ -568,4 +656,11 @@ const styles = StyleSheet.create({
   saveButtonText: { color: Colors.white, fontWeight: 'bold' },
   targetEditRow: { flexDirection: 'row', alignItems: 'center', marginTop: 2 },
   targetInput: { backgroundColor: 'rgba(255,255,255,0.25)', color: Colors.white, borderRadius: 4, paddingHorizontal: 6, paddingVertical: 2, fontSize: 12, fontWeight: '600', width: 36, textAlign: 'center', outlineStyle: 'none' } as any,
+  creditModuleWrapper: { marginTop: 20 },
+  creditToggleBtn: { borderWidth: 1, borderColor: Colors.primary, borderRadius: 8, paddingVertical: 10, alignItems: 'center' },
+  creditToggleBtnText: { color: Colors.primary, fontWeight: '600', fontSize: 14 },
+  creditModule: { marginTop: 12, backgroundColor: '#F8F9FA', borderRadius: 10, padding: 16, borderWidth: 1, borderColor: Colors.border },
+  creditError: { backgroundColor: '#FDECEA', color: Colors.danger, borderRadius: 8, padding: 10, marginBottom: 10, fontSize: 13 },
+  creditSendBtn: { marginTop: 14, backgroundColor: Colors.primary, borderRadius: 8, paddingVertical: 10, alignItems: 'center' },
+  creditSendBtnText: { color: Colors.white, fontWeight: 'bold', fontSize: 14 },
 })
