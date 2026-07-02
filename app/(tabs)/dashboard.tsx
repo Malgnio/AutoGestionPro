@@ -44,6 +44,7 @@ export default function DashboardScreen() {
   const [loading, setLoading] = useState(true)
   const [monthData, setMonthData] = useState<MonthData[]>(Array(12).fill({ sales: 0, credits: 0, dealer: 0, vpp: 0, mppCommission: 0, mppCount: 0, insurance: 0 }))
   const [hoveredMonth, setHoveredMonth] = useState<number | null>(null)
+  const [avgTarget, setAvgTarget] = useState(70)
 
   useEffect(() => { loadData() }, [selectedYear])
 
@@ -55,12 +56,13 @@ export default function DashboardScreen() {
     const start = `${selectedYear}-01-01`
     const end = `${selectedYear}-12-31`
 
-    const [{ data: sales }, { data: credits }, { data: vpp }, { data: mpp }, { data: insurance }] = await Promise.all([
+    const [{ data: sales }, { data: credits }, { data: vpp }, { data: mpp }, { data: insurance }, { data: targets }] = await Promise.all([
       supabase.from('sales').select('sale_month').eq('user_id', user.id).gte('sale_month', start).lte('sale_month', end),
       supabase.from('credits').select('sale_month, dealer_cost').eq('user_id', user.id).gte('sale_month', start).lte('sale_month', end),
       supabase.from('vpp').select('sale_month').eq('user_id', user.id).gte('sale_month', start).lte('sale_month', end),
       supabase.from('mpp').select('sale_month, product_type').eq('user_id', user.id).gte('sale_month', start).lte('sale_month', end),
       supabase.from('insurance').select('sale_month').eq('user_id', user.id).gte('sale_month', start).lte('sale_month', end),
+      supabase.from('targets').select('month, value').eq('user_id', user.id).eq('metric', 'credit_penetration').gte('month', start).lte('month', end),
     ])
 
     const data: MonthData[] = Array.from({ length: 12 }, () => ({ sales: 0, credits: 0, dealer: 0, vpp: 0, mppCommission: 0, mppCount: 0, insurance: 0 }))
@@ -72,6 +74,15 @@ export default function DashboardScreen() {
     insurance?.forEach(v => { const m = new Date(v.sale_month).getUTCMonth(); data[m].insurance += 1 })
 
     setMonthData(data)
+
+    // Promedio de metas configuradas (default 70 si no hay registro)
+    const targetValues = Array.from({ length: 12 }, (_, i) => {
+      const month = `${selectedYear}-${String(i + 1).padStart(2, '0')}-01`
+      const found = targets?.find(t => t.month.startsWith(month.slice(0, 7)))
+      return found ? found.value : 70
+    })
+    setAvgTarget(Math.round(targetValues.reduce((s, v) => s + v, 0) / 12))
+
     setLoading(false)
   }
 
@@ -81,10 +92,6 @@ export default function DashboardScreen() {
   const totalMppCommission = monthData.reduce((s, m) => s + m.mppCommission, 0)
   const totalMppCount = monthData.reduce((s, m) => s + m.mppCount, 0)
   const penetration = totalSales > 0 ? Math.round((totalCredits / totalSales) * 100) : 0
-  const activeMonths = monthData.filter(m => m.sales > 0)
-  const avgPenetration = activeMonths.length > 0
-    ? Math.round(activeMonths.reduce((s, m) => s + (m.credits / m.sales) * 100, 0) / activeMonths.length)
-    : 0
 
   const totalInsurance = monthData.reduce((s, m) => s + m.insurance, 0)
   const totalCreditCommission = monthData.reduce((sum, m) => sum + m.dealer / 1.19 * getCreditRate(m.credits), 0)
@@ -134,7 +141,7 @@ export default function DashboardScreen() {
             <View style={[styles.kpiCard, { backgroundColor: penetration >= 70 ? Colors.success : penetration >= 50 ? Colors.accent : '#C0392B' }]}>
               <Text style={styles.kpiLabel}>Penetración crédito</Text>
               <Text style={styles.kpiValue}>{penetration}%</Text>
-              <Text style={styles.kpiSub}>Meta promedio: {avgPenetration}%</Text>
+              <Text style={styles.kpiSub}>Meta promedio: {avgTarget}%</Text>
             </View>
             <View style={[styles.kpiCard, { backgroundColor: Colors.primary }]}>
               <Text style={styles.kpiLabel}>VPP en el año</Text>
