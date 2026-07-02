@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { Colors } from '../../constants/colors'
 import { usePeriod } from '../../contexts/PeriodContext'
 import AlertBell from '../../components/AlertBell'
+import { formatRut } from '../../lib/validateRut'
 
 const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
 
@@ -143,7 +144,7 @@ export default function PortfolioScreen() {
                   <View key={row.id} style={[styles.tableRow, index % 2 === 0 ? styles.rowEven : styles.rowOdd]}>
                     <Text style={[styles.cell, styles.cellN]}>{index + 1}</Text>
                     <Text style={[styles.cell, styles.cellName]}>{row.customer_name}</Text>
-                    <Text style={[styles.cell, styles.cellRut]}>{row.rut}</Text>
+                    <Text style={[styles.cell, styles.cellRut]}>{formatRut(row.rut)}</Text>
                     <Text style={[styles.cell, styles.cellModel]} numberOfLines={1}>{row.model}</Text>
                     <View style={[styles.cell, styles.cellFlag]}>
                       <View style={[styles.badge, { backgroundColor: row.hasCredit ? Colors.success : '#BDC3C7' }]}>
