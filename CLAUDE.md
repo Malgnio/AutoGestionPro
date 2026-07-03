@@ -59,11 +59,11 @@ hooks/useAuth.ts
 - **MPP**: Cliente, RUT, Chasis, Tipo (Platinium, Diamond, Zafiro)
 
 ## Tablas Supabase
-- `sales` — ventas (status nullable, requested_date, arrival_date, invoiced_date, delivery_date)
+- `sales` — ventas (purchase_type: 'R'|'F'|'FL'|'SEG', status nullable, requested_date, arrival_date, invoiced_date, delivery_date)
 - `credits` — créditos (credit_type: 'CI' | 'CC')
 - `insurance` — seguros
-- `vpp` — vehículos en parte de pago
-- `mpp` — mantenciones prepagadas
+- `vpp` — vehículos en parte de pago (client_name, rut, chassis, ppu, sale_month)
+- `mpp` — mantenciones prepagadas (client_name, rut, chassis, product_type, sale_month)
 - `profiles` — datos de usuario (full_name, role)
 - `salaries` — sueldo base por usuario y mes (UNIQUE user_id+month)
 - `bonuses` — bonos por usuario y mes (descripción + monto)
