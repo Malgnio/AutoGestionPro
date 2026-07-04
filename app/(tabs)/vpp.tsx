@@ -144,7 +144,6 @@ export default function VPPScreen() {
                   <Text style={[styles.cell, styles.cellN, styles.headCell]}>N°</Text>
                   <Text style={[styles.cell, styles.cellName, styles.headCell]}>Nombre Cliente</Text>
                   <Text style={[styles.cell, styles.cellRut, styles.headCell]}>RUT</Text>
-                  <Text style={[styles.cell, styles.cellChassis, styles.headCell]}>Chasis</Text>
                   <Text style={[styles.cell, styles.cellPpu, styles.headCell]}>PPU</Text>
                   <Text style={[styles.cell, styles.cellAction, styles.headCell]}></Text>
                 </View>
@@ -153,7 +152,6 @@ export default function VPPScreen() {
                     <Text style={[styles.cell, styles.cellN]}>{index + 1}</Text>
                     <Text style={[styles.cell, styles.cellName]}>{item.client_name}</Text>
                     <Text style={[styles.cell, styles.cellRut]}>{item.rut}</Text>
-                    <Text style={[styles.cell, styles.cellChassis, { color: Colors.textLight }]}>{item.chassis || '—'}</Text>
                     <Text style={[styles.cell, styles.cellPpu, { fontWeight: '600' }]}>{item.ppu}</Text>
                     <View style={[styles.cell, styles.cellAction]}>
                       <TouchableOpacity onPress={() => openView(item)} style={styles.iconBtn}>
@@ -207,18 +205,6 @@ export default function VPPScreen() {
 
           <Text style={styles.label}>RUT</Text>
           <Text style={[styles.viewValue, !viewMode && { backgroundColor: '#F8F9FA', color: Colors.textLight, borderRadius: 8, padding: 10, borderBottomWidth: 0, borderWidth: 1, borderColor: Colors.border }]}>{rut || '—'}</Text>
-
-          <Text style={styles.label}>Chasis</Text>
-          {viewMode ? (
-            <Text style={styles.viewValue}>{chassis || '—'}</Text>
-          ) : (
-            <TextInput
-              style={styles.input} value={chassis}
-              onChangeText={v => setChassis(v.toUpperCase())}
-              placeholder="Número de chasis" placeholderTextColor={Colors.textLight}
-              autoCapitalize="characters"
-            />
-          )}
 
           <Text style={styles.label}>PPU</Text>
           {viewMode ? (
