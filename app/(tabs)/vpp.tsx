@@ -133,6 +133,16 @@ export default function VPPScreen() {
         {loading ? (
           <ActivityIndicator color={Colors.primary} style={{ marginTop: 60 }} />
         ) : (
+          <>
+            <View style={styles.tableHeader}>
+              <View style={[styles.tableRow, styles.tableHead, { borderRadius: 12, borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }]}>
+                <Text style={[styles.cell, styles.cellN, styles.headCell]}>N°</Text>
+                <Text style={[styles.cell, styles.cellName, styles.headCell]}>Nombre Cliente</Text>
+                <Text style={[styles.cell, styles.cellRut, styles.headCell]}>RUT</Text>
+                <Text style={[styles.cell, styles.cellPpu, styles.headCell]}>PPU</Text>
+                <Text style={[styles.cell, styles.cellAction, styles.headCell]}></Text>
+              </View>
+            </View>
           <ScrollView style={styles.tableContainer}>
             {vppList.length === 0 ? (
               <View style={styles.empty}>
@@ -140,13 +150,6 @@ export default function VPPScreen() {
               </View>
             ) : (
               <View style={styles.table}>
-                <View style={[styles.tableRow, styles.tableHead]}>
-                  <Text style={[styles.cell, styles.cellN, styles.headCell]}>N°</Text>
-                  <Text style={[styles.cell, styles.cellName, styles.headCell]}>Nombre Cliente</Text>
-                  <Text style={[styles.cell, styles.cellRut, styles.headCell]}>RUT</Text>
-                  <Text style={[styles.cell, styles.cellPpu, styles.headCell]}>PPU</Text>
-                  <Text style={[styles.cell, styles.cellAction, styles.headCell]}></Text>
-                </View>
                 {vppList.map((item, index) => (
                   <View key={item.id} style={[styles.tableRow, index % 2 === 0 ? styles.rowEven : styles.rowOdd]}>
                     <Text style={[styles.cell, styles.cellN]}>{index + 1}</Text>
@@ -169,6 +172,7 @@ export default function VPPScreen() {
               </View>
             )}
           </ScrollView>
+          </>
         )}
       </View>
 
@@ -253,8 +257,9 @@ const styles = StyleSheet.create({
   kpiLabel: { fontSize: 12, color: 'rgba(255,255,255,0.8)', marginBottom: 6 },
   kpiValue: { fontSize: 28, fontWeight: 'bold', color: Colors.white, marginBottom: 2 },
   kpiSub: { fontSize: 12, color: 'rgba(255,255,255,0.7)' },
-  tableContainer: { flex: 1, paddingHorizontal: 32, paddingTop: 12 },
-  table: { backgroundColor: Colors.white, borderRadius: 12, overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 6, elevation: 2 },
+  tableHeader: { paddingHorizontal: 32, backgroundColor: Colors.background },
+  tableContainer: { flex: 1, paddingHorizontal: 32 },
+  table: { backgroundColor: Colors.white, borderBottomLeftRadius: 12, borderBottomRightRadius: 12, overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 6, elevation: 2 },
   tableRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16 },
   tableHead: { backgroundColor: Colors.primary },
   rowEven: { backgroundColor: Colors.white },

@@ -353,6 +353,21 @@ export default function SalesScreen() {
         {loading ? (
           <ActivityIndicator color={Colors.primary} style={{ marginTop: 60 }} />
         ) : (
+          <>
+            <View style={styles.tableHeader}>
+              <View style={[styles.tableRow, styles.tableHead, { borderRadius: 12, borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }]}>
+                <Text style={[styles.cell, styles.cellN, styles.headCell]}>#</Text>
+                <Text style={[styles.cell, styles.cellName, styles.headCell]}>Cliente</Text>
+                <Text style={[styles.cell, styles.cellRut, styles.headCell]}>RUT</Text>
+                <Text style={[styles.cell, styles.cellModel, styles.headCell]}>Modelo</Text>
+                <Text style={[styles.cell, styles.cellChassis, styles.headCell]}>Chasis</Text>
+                <Text style={[styles.cell, styles.cellOdv, styles.headCell]}>OdV</Text>
+                <Text style={[styles.cell, styles.cellType, styles.headCell]}>Tipo</Text>
+                <Text style={[styles.cell, styles.cellStatus, styles.headCell]}>Estado</Text>
+                <Text style={[styles.cell, styles.cellDate, styles.headCell]}>Fecha</Text>
+                <Text style={[styles.cell, styles.cellAction, styles.headCell]}></Text>
+              </View>
+            </View>
           <ScrollView style={styles.tableContainer}>
             {sales.length === 0 ? (
               <View style={styles.empty}>
@@ -360,18 +375,6 @@ export default function SalesScreen() {
               </View>
             ) : (
               <View style={styles.table}>
-                <View style={[styles.tableRow, styles.tableHead]}>
-                  <Text style={[styles.cell, styles.cellN, styles.headCell]}>#</Text>
-                  <Text style={[styles.cell, styles.cellName, styles.headCell]}>Cliente</Text>
-                  <Text style={[styles.cell, styles.cellRut, styles.headCell]}>RUT</Text>
-                  <Text style={[styles.cell, styles.cellModel, styles.headCell]}>Modelo</Text>
-                  <Text style={[styles.cell, styles.cellChassis, styles.headCell]}>Chasis</Text>
-                  <Text style={[styles.cell, styles.cellOdv, styles.headCell]}>OdV</Text>
-                  <Text style={[styles.cell, styles.cellType, styles.headCell]}>Tipo</Text>
-                  <Text style={[styles.cell, styles.cellStatus, styles.headCell]}>Estado</Text>
-                  <Text style={[styles.cell, styles.cellDate, styles.headCell]}>Fecha</Text>
-                  <Text style={[styles.cell, styles.cellAction, styles.headCell]}></Text>
-                </View>
                 {sales.map((item, index) => {
                   const statusDate = getStatusDate(item)
                   return (
@@ -416,6 +419,7 @@ export default function SalesScreen() {
               </View>
             )}
           </ScrollView>
+          </>
         )}
       </View>
 
@@ -597,8 +601,9 @@ const styles = StyleSheet.create({
   kpiLabel: { fontSize: 12, color: 'rgba(255,255,255,0.8)', marginBottom: 6 },
   kpiValue: { fontSize: 28, fontWeight: 'bold', color: Colors.white, marginBottom: 2 },
   kpiSub: { fontSize: 12, color: 'rgba(255,255,255,0.7)' },
-  tableContainer: { flex: 1, paddingHorizontal: 32, paddingTop: 12 },
-  table: { backgroundColor: Colors.white, borderRadius: 12, overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 6, elevation: 2 },
+  tableHeader: { paddingHorizontal: 32, backgroundColor: Colors.background },
+  tableContainer: { flex: 1, paddingHorizontal: 32 },
+  table: { backgroundColor: Colors.white, borderBottomLeftRadius: 12, borderBottomRightRadius: 12, overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 6, elevation: 2 },
   tableRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16 },
   tableHead: { backgroundColor: Colors.primary },
   rowEven: { backgroundColor: Colors.white },
