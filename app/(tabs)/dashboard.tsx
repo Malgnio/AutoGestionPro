@@ -181,6 +181,10 @@ export default function DashboardScreen() {
                   <View style={[styles.legendDot, { backgroundColor: '#2471A3' }]} />
                   <Text style={styles.legendText}>MPP</Text>
                 </View>
+                <View style={styles.legendItem}>
+                  <View style={[styles.legendDot, { backgroundColor: '#E67E22' }]} />
+                  <Text style={styles.legendText}>Seguros</Text>
+                </View>
               </View>
             </View>
 
@@ -248,6 +252,10 @@ export default function DashboardScreen() {
                         <View style={styles.barWrapper}>
                           <Text style={styles.barVal}>{m.mppCount > 0 ? m.mppCount : ''}</Text>
                           <View style={[styles.bar, { height: Math.max(Math.round((m.mppCount / maxBar) * BAR_HEIGHT), m.mppCount > 0 ? 2 : 0), backgroundColor: '#2471A3' }]} />
+                        </View>
+                        <View style={styles.barWrapper}>
+                          <Text style={styles.barVal}>{m.insurance > 0 ? m.insurance : ''}</Text>
+                          <View style={[styles.bar, { height: Math.max(Math.round((m.insurance / maxBar) * BAR_HEIGHT), m.insurance > 0 ? 2 : 0), backgroundColor: '#E67E22' }]} />
                         </View>
                       </View>
                       <Text style={[styles.barLabel, isHovered && { color: Colors.primary, fontWeight: 'bold' }]}>{MONTH_LABELS[i]}</Text>
