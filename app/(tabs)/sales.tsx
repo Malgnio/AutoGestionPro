@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native'
+import { useWindowDimensions, View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, ActivityIndicator } from 'react-native'
 import { supabase } from '../../lib/supabase'
 import { Colors } from '../../constants/colors'
 import PeriodSelector from '../../components/PeriodSelector'
@@ -84,6 +84,8 @@ function getStatusDate(item: Sale): string | null {
 }
 
 export default function SalesScreen() {
+  const { width } = useWindowDimensions()
+  const isMobile = width < 768
   const { selectedYear, selectedMonth, setSelectedYear, setSelectedMonth } = usePeriod()
   const [sales, setSales] = useState<Sale[]>([])
   const [creditsCount, setCreditsCount] = useState(0)
@@ -277,12 +279,12 @@ export default function SalesScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.main}>
-        <View style={styles.header}>
-          <Text style={styles.pageTitle}>Ventas — {MONTHS[selectedMonth]} {selectedYear}</Text>
+        <View style={[styles.header, isMobile && styles.headerMobile]}>
+          <Text style={[styles.pageTitle, isMobile && styles.pageTitleMobile]}>Ventas — {MONTHS[selectedMonth]} {selectedYear}</Text>
           <View style={styles.headerActions}>
             <AlertBell />
             <TouchableOpacity style={styles.addButton} onPress={() => { resetForm(); setShowForm(true) }}>
-              <Text style={styles.addButtonText}>+ Nueva venta</Text>
+              <Text style={styles.addButtonText}>{isMobile ? '+ Nueva' : '+ Nueva venta'}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -354,8 +356,8 @@ export default function SalesScreen() {
           <ActivityIndicator color={Colors.primary} style={{ marginTop: 60 }} />
         ) : (
           <>
-            <View style={styles.tableHeader}>
-              <View style={[styles.tableRow, styles.tableHead, { borderRadius: 12, borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }]}>
+            <View style={[styles.tableHeader, isMobile && styles.tableHeaderMobile]}>
+              <View style={[styles.tableRow, styles.tableHead, { borderRadius: 12, borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }, isMobile && { minWidth: 700 }]}>
                 <Text style={[styles.cell, styles.cellN, styles.headCell]}>#</Text>
                 <Text style={[styles.cell, styles.cellName, styles.headCell]}>Cliente</Text>
                 <Text style={[styles.cell, styles.cellRut, styles.headCell]}>RUT</Text>
@@ -368,7 +370,9 @@ export default function SalesScreen() {
                 <Text style={[styles.cell, styles.cellAction, styles.headCell]}></Text>
               </View>
             </View>
-          <ScrollView style={styles.tableContainer}>
+          <ScrollView style={[styles.tableContainer, isMobile && styles.tableContainerMobile]}
+            horizontal={isMobile} scrollEnabled={true}>
+            <ScrollView scrollEnabled={!isMobile} style={isMobile ? { minWidth: 700 } : undefined}>
             {sales.length === 0 ? (
               <View style={styles.empty}>
                 <Text style={styles.emptyText}>No hay ventas en {MONTHS[selectedMonth]} {selectedYear}</Text>
@@ -418,6 +422,7 @@ export default function SalesScreen() {
                 })}
               </View>
             )}
+            </ScrollView>
           </ScrollView>
           </>
         )}
@@ -425,7 +430,7 @@ export default function SalesScreen() {
 
       {showForm && <View style={styles.overlay} />}
 
-      <View style={[styles.drawer, showForm && styles.drawerOpen]}>
+      <View style={[styles.drawer, showForm && styles.drawerOpen, isMobile && styles.drawerMobile, isMobile && showForm && styles.drawerMobileOpen]}>
         <View style={styles.drawerHeader}>
           <View>
             <Text style={styles.drawerTitle}>
@@ -591,8 +596,10 @@ const styles = StyleSheet.create({
   container: { flex: 1, flexDirection: 'row', backgroundColor: Colors.background, overflow: 'hidden' },
   main: { flex: 1 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 32, paddingBottom: 16 },
+  headerMobile: { padding: 16, paddingBottom: 8 },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   pageTitle: { fontSize: 24, fontWeight: 'bold', color: Colors.text },
+  pageTitleMobile: { fontSize: 18 },
   addButton: { backgroundColor: Colors.primary, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8 },
   addButtonText: { color: Colors.white, fontWeight: 'bold', fontSize: 14 },
   kpiRow: { flexDirection: 'row', gap: 16, paddingHorizontal: 32, paddingTop: 20, paddingBottom: 4 },
@@ -602,7 +609,9 @@ const styles = StyleSheet.create({
   kpiValue: { fontSize: 28, fontWeight: 'bold', color: Colors.white, marginBottom: 2 },
   kpiSub: { fontSize: 12, color: 'rgba(255,255,255,0.7)' },
   tableHeader: { paddingHorizontal: 32, backgroundColor: Colors.background },
+  tableHeaderMobile: { paddingHorizontal: 12, overflowX: 'auto' } as any,
   tableContainer: { flex: 1, paddingHorizontal: 32 },
+  tableContainerMobile: { paddingHorizontal: 12 },
   table: { backgroundColor: Colors.white, borderBottomLeftRadius: 12, borderBottomRightRadius: 12, overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 6, elevation: 2 },
   tableRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16 },
   tableHead: { backgroundColor: Colors.primary },
@@ -637,6 +646,8 @@ const styles = StyleSheet.create({
     transition: 'transform 0.3s ease',
   } as any,
   drawerOpen: { transform: [{ translateX: 0 }] },
+  drawerMobile: { width: '100%' as any, transform: [{ translateY: 800 }], top: 52 },
+  drawerMobileOpen: { transform: [{ translateY: 0 }] },
   drawerHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', padding: 24, borderBottomWidth: 1, borderBottomColor: Colors.border },
   drawerTitle: { fontSize: 18, fontWeight: 'bold', color: Colors.text },
   drawerSub: { fontSize: 13, color: Colors.textLight, marginTop: 2 },
