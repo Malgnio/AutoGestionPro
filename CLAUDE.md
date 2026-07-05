@@ -206,11 +206,20 @@ transition: 'transform 0.3s ease'
 - Límite Supabase plan gratuito: 2 emails/hora. Si se supera, esperar antes de reintentar
 - Después de cambiar contraseña: cierra sesión y vuelve al login
 
+## Responsive (mobile)
+- Breakpoint: `width < 768` → `isMobile = true` via `useWindowDimensions`
+- **Dashboard** ✅ — KPIs en grid 2 columnas, gráfico scrolleable horizontal, header apilado
+- **Layout/Sidebar** ✅ — En móvil: barra azul superior con botón ☰, sidebar como drawer deslizable desde izquierda (zIndex 201), se cierra al navegar o tocar overlay
+- **Ventas** ⚠️ — Tabla scrolleable horizontal, drawer ocupa pantalla completa (pendiente fix ancho drawer)
+- **Créditos, Seguros, VPP, MPP, Sueldo, Clientes** — pendiente
+- **AlertBell** ✅ — Panel limita ancho a `min(340, innerWidth-16)`
+
 ## Versión
 - **v1.0.0** — Release oficial inicial (tag en GitHub, 2026-06-21)
 - **v1.1.0** — Sistema de alertas + PeriodContext global (tag en GitHub, 2026-06-27)
 - **Sin tag** — (2026-07-01): modo vista 👁️ en todas las grillas, MPP ingreso manual, dashboard Seguros KPI, meta penetración editable, estado "Llegada Suc." en ventas
 - **Sin tag** — (2026-07-02): pantalla Clientes, módulo "Compra con Crédito" en ventas, fix título case con acentos, fix Meta promedio dashboard, reorden KPIs dashboard
+- **Sin tag** — (2026-07-05): responsive Dashboard + Sidebar móvil, inicio responsive Ventas, fix AlertBell móvil
 
 ## Pendiente
 - Verificar políticas UPDATE en otras tablas (credits, insurance, vpp, mpp) — sales ya tiene la suya
