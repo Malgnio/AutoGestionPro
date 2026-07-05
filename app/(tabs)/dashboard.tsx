@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native'
+import { useWindowDimensions, View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native'
 import { supabase } from '../../lib/supabase'
 import { Colors } from '../../constants/colors'
 import { usePeriod } from '../../contexts/PeriodContext'
@@ -39,6 +39,8 @@ type MonthData = {
 }
 
 export default function DashboardScreen() {
+  const { width } = useWindowDimensions()
+  const isMobile = width < 768
   const { selectedYear, setSelectedYear, availableYears, addYear } = usePeriod()
   const nextYear = Math.max(...availableYears) + 1
   const [loading, setLoading] = useState(true)
@@ -75,7 +77,6 @@ export default function DashboardScreen() {
 
     setMonthData(data)
 
-    // Promedio de metas configuradas (default 70 si no hay registro)
     const targetValues = Array.from({ length: 12 }, (_, i) => {
       const month = `${selectedYear}-${String(i + 1).padStart(2, '0')}-01`
       const found = targets?.find(t => t.month.startsWith(month.slice(0, 7)))
@@ -104,10 +105,10 @@ export default function DashboardScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.topBar}>
-        <Text style={styles.pageTitle}>Resumen Anual</Text>
-        <View style={styles.topBarRight}>
-          <View style={styles.yearRow}>
+      <View style={[styles.topBar, isMobile && styles.topBarMobile]}>
+        <Text style={[styles.pageTitle, isMobile && styles.pageTitleMobile]}>Resumen Anual</Text>
+        <View style={[styles.topBarRight, isMobile && styles.topBarRightMobile]}>
+          <View style={[styles.yearRow, isMobile && styles.yearRowMobile]}>
             {availableYears.map(y => (
               <TouchableOpacity key={y} style={[styles.yearBtn, selectedYear === y && styles.yearBtnActive]} onPress={() => setSelectedYear(y)}>
                 <Text style={[styles.yearBtnText, selectedYear === y && styles.yearBtnTextActive]}>{y}</Text>
@@ -124,36 +125,36 @@ export default function DashboardScreen() {
       {loading ? (
         <ActivityIndicator color={Colors.primary} style={{ marginTop: 60 }} />
       ) : (
-        <ScrollView style={styles.scrollArea} contentContainerStyle={styles.content}>
+        <ScrollView style={styles.scrollArea} contentContainerStyle={[styles.content, isMobile && styles.contentMobile]}>
 
-          {/* Fila única de KPIs */}
-          <View style={styles.kpiRow}>
-            <View style={[styles.kpiCard, { backgroundColor: Colors.secondary }]}>
+          {/* KPIs */}
+          <View style={[styles.kpiRow, isMobile && styles.kpiRowMobile]}>
+            <View style={[styles.kpiCard, isMobile && styles.kpiCardMobile, { backgroundColor: Colors.secondary }]}>
               <Text style={styles.kpiLabel}>Unidades vendidas</Text>
               <Text style={styles.kpiValue}>{totalSales}</Text>
               <Text style={styles.kpiSub}>${(totalSales * 70000).toLocaleString('es-CL')} comisión</Text>
             </View>
-            <View style={[styles.kpiCard, { backgroundColor: Colors.success }]}>
+            <View style={[styles.kpiCard, isMobile && styles.kpiCardMobile, { backgroundColor: Colors.success }]}>
               <Text style={styles.kpiLabel}>Créditos</Text>
               <Text style={styles.kpiValue}>{totalCredits}</Text>
               <Text style={styles.kpiSub}>${Math.round(totalCreditCommission).toLocaleString('es-CL')} comisión</Text>
             </View>
-            <View style={[styles.kpiCard, { backgroundColor: penetration >= 70 ? Colors.success : penetration >= 50 ? Colors.accent : '#C0392B' }]}>
+            <View style={[styles.kpiCard, isMobile && styles.kpiCardMobile, { backgroundColor: penetration >= 70 ? Colors.success : penetration >= 50 ? Colors.accent : '#C0392B' }]}>
               <Text style={styles.kpiLabel}>Penetración crédito</Text>
               <Text style={styles.kpiValue}>{penetration}%</Text>
               <Text style={styles.kpiSub}>Meta promedio: {avgTarget}%</Text>
             </View>
-            <View style={[styles.kpiCard, { backgroundColor: '#E67E22' }]}>
+            <View style={[styles.kpiCard, isMobile && styles.kpiCardMobile, { backgroundColor: '#E67E22' }]}>
               <Text style={styles.kpiLabel}>Seguros en el año</Text>
               <Text style={styles.kpiValue}>{totalInsurance}</Text>
               <Text style={styles.kpiSub}>${totalInsuranceCommission.toLocaleString('es-CL')} comisión</Text>
             </View>
-            <View style={[styles.kpiCard, { backgroundColor: Colors.primary }]}>
+            <View style={[styles.kpiCard, isMobile && styles.kpiCardMobile, { backgroundColor: Colors.primary }]}>
               <Text style={styles.kpiLabel}>VPP en el año</Text>
               <Text style={styles.kpiValue}>{totalVpp}</Text>
               <Text style={styles.kpiSub}>${totalVppCommission.toLocaleString('es-CL')} comisión</Text>
             </View>
-            <View style={[styles.kpiCard, { backgroundColor: '#2471A3' }]}>
+            <View style={[styles.kpiCard, isMobile && styles.kpiCardMobile, { backgroundColor: '#2471A3' }]}>
               <Text style={styles.kpiLabel}>MPP en el año</Text>
               <Text style={styles.kpiValue}>{totalMppCount}</Text>
               <Text style={styles.kpiSub}>${totalMppCommission.toLocaleString('es-CL')} comisión</Text>
@@ -162,9 +163,9 @@ export default function DashboardScreen() {
 
           {/* Gráfico */}
           <View style={styles.chartCard}>
-            <View style={styles.chartHeader}>
+            <View style={[styles.chartHeader, isMobile && styles.chartHeaderMobile]}>
               <Text style={styles.chartTitle}>Actividad mensual — {selectedYear}</Text>
-              <View style={styles.legend}>
+              <View style={[styles.legend, isMobile && styles.legendMobile]}>
                 <View style={styles.legendItem}>
                   <View style={[styles.legendDot, { backgroundColor: Colors.secondary }]} />
                   <Text style={styles.legendText}>Unidades</Text>
@@ -188,83 +189,82 @@ export default function DashboardScreen() {
               </View>
             </View>
 
-            <View style={styles.chartWrapper}>
-              {/* Barras */}
-              <View style={styles.chart}>
-                {monthData.map((m, i) => {
-                  const isHovered = hoveredMonth === i
-                  const creditComision = Math.round(m.dealer / 1.19 * getCreditRate(m.credits))
-                  const vppComision = m.vpp * VPP_COMMISSION
-                  const insuranceComision = m.insurance * 23000
-                  const totalMes = creditComision + vppComision + m.mppCommission + insuranceComision
-                  const penetracion = m.sales > 0 ? Math.round((m.credits / m.sales) * 100) : 0
-                  return (
-                    <View
-                      key={i}
-                      style={[styles.barGroup, isHovered && { zIndex: 100 } as any]}
-                      // @ts-ignore
-                      onMouseEnter={() => setHoveredMonth(i)}
-                      onMouseLeave={() => setHoveredMonth(null)}
-                    >
-                      {isHovered && (
-                        <View style={[styles.tooltip, i >= 9 ? styles.tooltipLeft : styles.tooltipCenter]}>
-                          <Text style={styles.tooltipMonth}>{MONTH_LABELS[i]}-{String(selectedYear).slice(2)}</Text>
-                          <View style={styles.tooltipRow}>
-                            <View style={[styles.tooltipDot, { backgroundColor: Colors.secondary }]} />
-                            <Text style={styles.tooltipText}>Ventas: <Text style={styles.tooltipBold}>{m.sales}</Text></Text>
-                          </View>
-                          <View style={styles.tooltipRow}>
-                            <View style={[styles.tooltipDot, { backgroundColor: Colors.success }]} />
-                            <Text style={styles.tooltipText}>Créditos: <Text style={styles.tooltipBold}>{m.credits}</Text></Text>
-                          </View>
-                          <View style={styles.tooltipRow}>
-                            <View style={[styles.tooltipDot, { backgroundColor: Colors.primary }]} />
-                            <Text style={styles.tooltipText}>VPP: <Text style={styles.tooltipBold}>{m.vpp}</Text></Text>
-                          </View>
-                          <View style={styles.tooltipRow}>
-                            <View style={[styles.tooltipDot, { backgroundColor: '#2471A3' }]} />
-                            <Text style={styles.tooltipText}>MPP: <Text style={styles.tooltipBold}>{m.mppCount}</Text></Text>
-                          </View>
-                          <View style={styles.tooltipRow}>
-                            <View style={[styles.tooltipDot, { backgroundColor: '#E67E22' }]} />
-                            <Text style={styles.tooltipText}>Seguros: <Text style={styles.tooltipBold}>{m.insurance}</Text></Text>
-                          </View>
-                          {totalMes > 0 && (
-                            <View style={[styles.tooltipRow, { borderTopWidth: 1, borderTopColor: Colors.border, paddingTop: 6, marginTop: 2 }]}>
-                              <Text style={[styles.tooltipText, { color: Colors.accent }]}>Comisión total: <Text style={[styles.tooltipBold, { color: Colors.accent }]}>${totalMes.toLocaleString('es-CL')}</Text></Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              <View style={[styles.chartWrapper, isMobile && { minWidth: 600 }]}>
+                <View style={styles.chart}>
+                  {monthData.map((m, i) => {
+                    const isHovered = hoveredMonth === i
+                    const creditComision = Math.round(m.dealer / 1.19 * getCreditRate(m.credits))
+                    const vppComision = m.vpp * VPP_COMMISSION
+                    const insuranceComision = m.insurance * 23000
+                    const totalMes = creditComision + vppComision + m.mppCommission + insuranceComision
+                    return (
+                      <View
+                        key={i}
+                        style={[styles.barGroup, isHovered && { zIndex: 100 } as any]}
+                        // @ts-ignore
+                        onMouseEnter={() => setHoveredMonth(i)}
+                        onMouseLeave={() => setHoveredMonth(null)}
+                      >
+                        {isHovered && (
+                          <View style={[styles.tooltip, i >= 9 ? styles.tooltipLeft : styles.tooltipCenter]}>
+                            <Text style={styles.tooltipMonth}>{MONTH_LABELS[i]}-{String(selectedYear).slice(2)}</Text>
+                            <View style={styles.tooltipRow}>
+                              <View style={[styles.tooltipDot, { backgroundColor: Colors.secondary }]} />
+                              <Text style={styles.tooltipText}>Ventas: <Text style={styles.tooltipBold}>{m.sales}</Text></Text>
                             </View>
-                          )}
+                            <View style={styles.tooltipRow}>
+                              <View style={[styles.tooltipDot, { backgroundColor: Colors.success }]} />
+                              <Text style={styles.tooltipText}>Créditos: <Text style={styles.tooltipBold}>{m.credits}</Text></Text>
+                            </View>
+                            <View style={styles.tooltipRow}>
+                              <View style={[styles.tooltipDot, { backgroundColor: Colors.primary }]} />
+                              <Text style={styles.tooltipText}>VPP: <Text style={styles.tooltipBold}>{m.vpp}</Text></Text>
+                            </View>
+                            <View style={styles.tooltipRow}>
+                              <View style={[styles.tooltipDot, { backgroundColor: '#2471A3' }]} />
+                              <Text style={styles.tooltipText}>MPP: <Text style={styles.tooltipBold}>{m.mppCount}</Text></Text>
+                            </View>
+                            <View style={styles.tooltipRow}>
+                              <View style={[styles.tooltipDot, { backgroundColor: '#E67E22' }]} />
+                              <Text style={styles.tooltipText}>Seguros: <Text style={styles.tooltipBold}>{m.insurance}</Text></Text>
+                            </View>
+                            {totalMes > 0 && (
+                              <View style={[styles.tooltipRow, { borderTopWidth: 1, borderTopColor: Colors.border, paddingTop: 6, marginTop: 2 }]}>
+                                <Text style={[styles.tooltipText, { color: Colors.accent }]}>Comisión total: <Text style={[styles.tooltipBold, { color: Colors.accent }]}>${totalMes.toLocaleString('es-CL')}</Text></Text>
+                              </View>
+                            )}
+                          </View>
+                        )}
+                        <View style={styles.bars}>
+                          <View style={styles.barWrapper}>
+                            <Text style={styles.barVal}>{m.sales > 0 ? m.sales : ''}</Text>
+                            <View style={[styles.bar, { height: Math.max(Math.round((m.sales / maxBar) * BAR_HEIGHT), m.sales > 0 ? 2 : 0), backgroundColor: isHovered ? '#1a6ba0' : Colors.secondary }]} />
+                          </View>
+                          <View style={styles.barWrapper}>
+                            <Text style={styles.barVal}>{m.credits > 0 ? m.credits : ''}</Text>
+                            <View style={[styles.bar, { height: Math.max(Math.round((m.credits / maxBar) * BAR_HEIGHT), m.credits > 0 ? 2 : 0), backgroundColor: isHovered ? '#27AE60' : Colors.success }]} />
+                          </View>
+                          <View style={styles.barWrapper}>
+                            <Text style={styles.barVal}>{m.vpp > 0 ? m.vpp : ''}</Text>
+                            <View style={[styles.bar, { height: Math.max(Math.round((m.vpp / maxBar) * BAR_HEIGHT), m.vpp > 0 ? 2 : 0), backgroundColor: isHovered ? '#0d3b5e' : Colors.primary }]} />
+                          </View>
+                          <View style={styles.barWrapper}>
+                            <Text style={styles.barVal}>{m.mppCount > 0 ? m.mppCount : ''}</Text>
+                            <View style={[styles.bar, { height: Math.max(Math.round((m.mppCount / maxBar) * BAR_HEIGHT), m.mppCount > 0 ? 2 : 0), backgroundColor: '#2471A3' }]} />
+                          </View>
+                          <View style={styles.barWrapper}>
+                            <Text style={styles.barVal}>{m.insurance > 0 ? m.insurance : ''}</Text>
+                            <View style={[styles.bar, { height: Math.max(Math.round((m.insurance / maxBar) * BAR_HEIGHT), m.insurance > 0 ? 2 : 0), backgroundColor: '#E67E22' }]} />
+                          </View>
                         </View>
-                      )}
-                      <View style={styles.bars}>
-                        <View style={styles.barWrapper}>
-                          <Text style={styles.barVal}>{m.sales > 0 ? m.sales : ''}</Text>
-                          <View style={[styles.bar, { height: Math.max(Math.round((m.sales / maxBar) * BAR_HEIGHT), m.sales > 0 ? 2 : 0), backgroundColor: isHovered ? '#1a6ba0' : Colors.secondary }]} />
-                        </View>
-                        <View style={styles.barWrapper}>
-                          <Text style={styles.barVal}>{m.credits > 0 ? m.credits : ''}</Text>
-                          <View style={[styles.bar, { height: Math.max(Math.round((m.credits / maxBar) * BAR_HEIGHT), m.credits > 0 ? 2 : 0), backgroundColor: isHovered ? '#27AE60' : Colors.success }]} />
-                        </View>
-                        <View style={styles.barWrapper}>
-                          <Text style={styles.barVal}>{m.vpp > 0 ? m.vpp : ''}</Text>
-                          <View style={[styles.bar, { height: Math.max(Math.round((m.vpp / maxBar) * BAR_HEIGHT), m.vpp > 0 ? 2 : 0), backgroundColor: isHovered ? '#0d3b5e' : Colors.primary }]} />
-                        </View>
-                        <View style={styles.barWrapper}>
-                          <Text style={styles.barVal}>{m.mppCount > 0 ? m.mppCount : ''}</Text>
-                          <View style={[styles.bar, { height: Math.max(Math.round((m.mppCount / maxBar) * BAR_HEIGHT), m.mppCount > 0 ? 2 : 0), backgroundColor: '#2471A3' }]} />
-                        </View>
-                        <View style={styles.barWrapper}>
-                          <Text style={styles.barVal}>{m.insurance > 0 ? m.insurance : ''}</Text>
-                          <View style={[styles.bar, { height: Math.max(Math.round((m.insurance / maxBar) * BAR_HEIGHT), m.insurance > 0 ? 2 : 0), backgroundColor: '#E67E22' }]} />
-                        </View>
+                        <Text style={[styles.barLabel, isHovered && { color: Colors.primary, fontWeight: 'bold' }]}>{MONTH_LABELS[i]}</Text>
                       </View>
-                      <Text style={[styles.barLabel, isHovered && { color: Colors.primary, fontWeight: 'bold' }]}>{MONTH_LABELS[i]}</Text>
-                    </View>
-                  )
-                })}
+                    )
+                  })}
+                </View>
               </View>
-
-            </View>
+            </ScrollView>
           </View>
 
         </ScrollView>
@@ -276,9 +276,13 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 32, paddingBottom: 16 },
+  topBarMobile: { flexDirection: 'column', alignItems: 'flex-start', padding: 16, paddingBottom: 8, gap: 12 },
   topBarRight: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  topBarRightMobile: { width: '100%', justifyContent: 'space-between' },
   pageTitle: { fontSize: 24, fontWeight: 'bold', color: Colors.text },
+  pageTitleMobile: { fontSize: 20 },
   yearRow: { flexDirection: 'row', gap: 8 },
+  yearRowMobile: { flexWrap: 'wrap', gap: 6 },
   yearBtn: { paddingHorizontal: 16, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: Colors.border, backgroundColor: Colors.white },
   yearBtnActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
   yearBtnText: { fontSize: 13, color: Colors.textLight },
@@ -287,24 +291,28 @@ const styles = StyleSheet.create({
   addYearBtnText: { fontSize: 13, fontWeight: '600', color: Colors.textLight },
   scrollArea: { flex: 1 },
   content: { padding: 32, gap: 16 },
+  contentMobile: { padding: 16, gap: 12 },
   kpiRow: { flexDirection: 'row', gap: 16 },
+  kpiRowMobile: { flexWrap: 'wrap', gap: 10 },
   kpiCard: { flex: 1, borderRadius: 12, padding: 24 },
+  kpiCardMobile: { flexBasis: '47%', flex: 0, padding: 16 },
   kpiLabel: { fontSize: 13, color: 'rgba(255,255,255,0.8)', marginBottom: 12 },
   kpiValue: { fontSize: 32, fontWeight: 'bold', color: '#fff', marginBottom: 6 },
   kpiSub: { fontSize: 12, color: 'rgba(255,255,255,0.7)' },
   chartCard: { backgroundColor: Colors.white, borderRadius: 12, padding: 28, shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 6, elevation: 2 },
   chartHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
+  chartHeaderMobile: { flexDirection: 'column', alignItems: 'flex-start', gap: 12 },
   chartTitle: { fontSize: 15, fontWeight: 'bold', color: Colors.text },
   legend: { flexDirection: 'row', gap: 16 },
+  legendMobile: { flexWrap: 'wrap', gap: 10 },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   legendDot: { width: 10, height: 10, borderRadius: 5 },
   legendLine: { width: 20, height: 3, borderRadius: 2 },
   legendText: { fontSize: 12, color: Colors.textLight },
   chartWrapper: { position: 'relative' as any, overflow: 'visible' as any },
   chart: { flexDirection: 'row', alignItems: 'flex-end', height: 180, gap: 4, overflow: 'visible' as any },
-  lineOverlay: { position: 'absolute' as any, top: 0, left: 0, right: 0, bottom: 20, overflow: 'hidden' as any },
   lineDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.accent, borderWidth: 2, borderColor: Colors.white, zIndex: 1 },
-  barGroup: { flex: 1, alignItems: 'center', gap: 4, zIndex: 1 },
+  barGroup: { flex: 1, alignItems: 'center', gap: 4, zIndex: 1, minWidth: 44 },
   bars: { flexDirection: 'row', alignItems: 'flex-end', gap: 2, height: 150 },
   barWrapper: { alignItems: 'center', justifyContent: 'flex-end' },
   bar: { width: 14, borderRadius: 3, minHeight: 2 },

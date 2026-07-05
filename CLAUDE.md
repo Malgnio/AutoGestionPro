@@ -60,7 +60,7 @@ hooks/useAuth.ts
 
 ## Tablas Supabase
 - `sales` — ventas (purchase_type: 'R'|'F'|'FL'|'SEG', status nullable, requested_date, arrival_date, invoiced_date, delivery_date)
-- `credits` — créditos (credit_type: 'CI' | 'CC')
+- `credits` — créditos (customer_name, rut, dealer_cost, credit_type, sale_month)
 - `insurance` — seguros
 - `vpp` — vehículos en parte de pago (client_name, rut, chassis, ppu, sale_month)
 - `mpp` — mantenciones prepagadas (client_name, rut, chassis, product_type, sale_month)
