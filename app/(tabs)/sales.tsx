@@ -430,7 +430,7 @@ export default function SalesScreen() {
 
       {showForm && <View style={styles.overlay} />}
 
-      <View style={[styles.drawer, showForm && styles.drawerOpen, isMobile && styles.drawerMobile, isMobile && showForm && styles.drawerMobileOpen]}>
+      <View style={[styles.drawer, showForm && styles.drawerOpen, isMobile && { position: 'fixed' as any, top: 52, left: 0, right: 0, bottom: 0, width: undefined, transform: showForm ? [{ translateY: 0 }] : [{ translateY: 1000 }] }]}>
         <View style={styles.drawerHeader}>
           <View>
             <Text style={styles.drawerTitle}>
@@ -646,8 +646,6 @@ const styles = StyleSheet.create({
     transition: 'transform 0.3s ease',
   } as any,
   drawerOpen: { transform: [{ translateX: 0 }] },
-  drawerMobile: { left: 0, right: 0, width: undefined, transform: [{ translateY: 800 }], top: 52 },
-  drawerMobileOpen: { transform: [{ translateY: 0 }] },
   drawerHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', padding: 24, borderBottomWidth: 1, borderBottomColor: Colors.border },
   drawerTitle: { fontSize: 18, fontWeight: 'bold', color: Colors.text },
   drawerSub: { fontSize: 13, color: Colors.textLight, marginTop: 2 },
