@@ -120,8 +120,8 @@ export default function AlertBell() {
       <div style={{
         position: 'fixed',
         top: panelPos.top,
-        right: panelPos.right,
-        width: 340,
+        right: Math.max(panelPos.right, 8),
+        width: Math.min(340, window.innerWidth - 16),
         maxHeight: 480,
         backgroundColor: Colors.white,
         borderRadius: 12,

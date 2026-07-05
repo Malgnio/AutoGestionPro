@@ -646,7 +646,7 @@ const styles = StyleSheet.create({
     transition: 'transform 0.3s ease',
   } as any,
   drawerOpen: { transform: [{ translateX: 0 }] },
-  drawerMobile: { width: '100%' as any, transform: [{ translateY: 800 }], top: 52 },
+  drawerMobile: { left: 0, right: 0, width: undefined, transform: [{ translateY: 800 }], top: 52 },
   drawerMobileOpen: { transform: [{ translateY: 0 }] },
   drawerHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', padding: 24, borderBottomWidth: 1, borderBottomColor: Colors.border },
   drawerTitle: { fontSize: 18, fontWeight: 'bold', color: Colors.text },
