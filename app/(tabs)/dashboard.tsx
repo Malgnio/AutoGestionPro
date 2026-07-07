@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { Colors } from '../../constants/colors'
 import { usePeriod } from '../../contexts/PeriodContext'
 import AlertBell from '../../components/AlertBell'
+import * as XLSX from 'xlsx'
 
 const SALES_COMMISSION = [
   { min: 15, max: Infinity, rate: 0.12 },
@@ -38,15 +39,19 @@ type MonthData = {
   insurance: number
 }
 
+const MONTHS_FULL = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+
 export default function DashboardScreen() {
   const { width } = useWindowDimensions()
   const isMobile = width < 768
-  const { selectedYear, setSelectedYear, availableYears, addYear } = usePeriod()
+  const { selectedYear, setSelectedYear, availableYears, addYear, selectedMonth, setSelectedMonth } = usePeriod()
   const nextYear = Math.max(...availableYears) + 1
   const [loading, setLoading] = useState(true)
   const [monthData, setMonthData] = useState<MonthData[]>(Array(12).fill({ sales: 0, credits: 0, dealer: 0, vpp: 0, mppCommission: 0, mppCount: 0, insurance: 0 }))
   const [hoveredMonth, setHoveredMonth] = useState<number | null>(null)
   const [avgTarget, setAvgTarget] = useState(70)
+  const [showExportMenu, setShowExportMenu] = useState(false)
+  const [exporting, setExporting] = useState(false)
 
   useEffect(() => { loadData() }, [selectedYear])
 
@@ -103,6 +108,134 @@ export default function DashboardScreen() {
   const maxBar = Math.max(...monthData.map(m => Math.max(m.sales, m.credits, m.vpp, m.mppCount)), 1)
   const BAR_HEIGHT = 140
 
+  async function fetchMonthDetail(year: number, month: number, userId: string) {
+    const start = new Date(year, month, 1).toISOString().split('T')[0]
+    const end = new Date(year, month + 1, 0).toISOString().split('T')[0]
+    const [{ data: sales }, { data: credits }, { data: insurance }, { data: vpp }, { data: mpp }] = await Promise.all([
+      supabase.from('sales').select('customer_name, rut, model, chassis, odv, purchase_type, status').eq('user_id', userId).gte('sale_month', start).lte('sale_month', end).order('created_at', { ascending: true }),
+      supabase.from('credits').select('customer_name, rut, dealer_cost, credit_type').eq('user_id', userId).gte('sale_month', start).lte('sale_month', end).order('created_at', { ascending: true }),
+      supabase.from('insurance').select('customer_name, rut, chassis, insurance_type').eq('user_id', userId).gte('sale_month', start).lte('sale_month', end).order('created_at', { ascending: true }),
+      supabase.from('vpp').select('client_name, rut, ppu').eq('user_id', userId).gte('sale_month', start).lte('sale_month', end).order('created_at', { ascending: true }),
+      supabase.from('mpp').select('client_name, rut, product_type').eq('user_id', userId).gte('sale_month', start).lte('sale_month', end).order('created_at', { ascending: true }),
+    ])
+    return { sales: sales ?? [], credits: credits ?? [], insurance: insurance ?? [], vpp: vpp ?? [], mpp: mpp ?? [] }
+  }
+
+  function buildSheets(monthLabel: string, data: Awaited<ReturnType<typeof fetchMonthDetail>>, mIdx: number) {
+    const { sales, credits, insurance, vpp, mpp } = data
+    const creditCount = credits.length
+    const dealerTotal = credits.reduce((s, c) => s + Number(c.dealer_cost), 0)
+    const penetration = sales.length > 0 ? Math.round((creditCount / sales.length) * 100) : 0
+    const creditComm = Math.round(dealerTotal / 1.19 * getCreditRate(creditCount))
+    const vppComm = vpp.length * VPP_COMMISSION
+    const insuranceComm = insurance.length * 23000
+    const mppComm = mpp.reduce((s, m: any) => s + (MPP_COMMISSION[m.product_type] ?? 0), 0)
+    const salesComm = sales.length * 70000
+
+    const resumen = [
+      ['Mes', monthLabel],
+      [],
+      ['Métrica', 'Cantidad', 'Comisión'],
+      ['Ventas', sales.length, salesComm],
+      ['Créditos', creditCount, creditComm],
+      ['Penetración crédito', `${penetration}%`, ''],
+      ['Seguros', insurance.length, insuranceComm],
+      ['VPP', vpp.length, vppComm],
+      ['MPP', mpp.length, mppComm],
+      [],
+      ['Total comisión', '', salesComm + creditComm + insuranceComm + vppComm + mppComm],
+    ]
+
+    const ventasRows = [
+      ['#', 'Cliente', 'RUT', 'Modelo', 'Chasis', 'OdV', 'Tipo', 'Estado'],
+      ...sales.map((s: any, i: number) => [i + 1, s.customer_name, s.rut, s.model, s.chassis, s.odv, s.purchase_type, s.status ?? '']),
+    ]
+
+    const creditosRows = [
+      ['#', 'Cliente', 'RUT', 'C.Dealer', 'Tipo'],
+      ...credits.map((c: any, i: number) => [i + 1, c.customer_name, c.rut, Number(c.dealer_cost), c.credit_type]),
+    ]
+
+    const segurosRows = [
+      ['#', 'Cliente', 'RUT', 'Chasis', 'Tipo'],
+      ...insurance.map((s: any, i: number) => [i + 1, s.customer_name, s.rut, s.chassis, s.insurance_type]),
+    ]
+
+    const vppRows = [
+      ['#', 'Cliente', 'RUT', 'PPU'],
+      ...vpp.map((v: any, i: number) => [i + 1, v.client_name, v.rut, v.ppu]),
+    ]
+
+    const mppRows = [
+      ['#', 'Cliente', 'RUT', 'Tipo Producto'],
+      ...mpp.map((m: any, i: number) => [i + 1, m.client_name, m.rut, m.product_type]),
+    ]
+
+    return { resumen, ventasRows, creditosRows, segurosRows, vppRows, mppRows }
+  }
+
+  async function handleExportMonth() {
+    setExporting(true); setShowExportMenu(false)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { setExporting(false); return }
+    const monthLabel = `${MONTHS_FULL[selectedMonth]} ${selectedYear}`
+    const data = await fetchMonthDetail(selectedYear, selectedMonth, user.id)
+    const { resumen, ventasRows, creditosRows, segurosRows, vppRows, mppRows } = buildSheets(monthLabel, data, selectedMonth)
+
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(resumen), 'Resumen')
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(ventasRows), 'Ventas')
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(creditosRows), 'Créditos')
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(segurosRows), 'Seguros')
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(vppRows), 'VPP')
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(mppRows), 'MPP')
+    XLSX.writeFile(wb, `AutoGestion_${MONTHS_FULL[selectedMonth]}_${selectedYear}.xlsx`)
+    setExporting(false)
+  }
+
+  async function handleExportYear() {
+    setExporting(true); setShowExportMenu(false)
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { setExporting(false); return }
+
+    const wb = XLSX.utils.book_new()
+    const allVentas: any[][] = [['Mes', '#', 'Cliente', 'RUT', 'Modelo', 'Chasis', 'OdV', 'Tipo', 'Estado']]
+    const allCreditos: any[][] = [['Mes', '#', 'Cliente', 'RUT', 'C.Dealer', 'Tipo']]
+    const allSeguros: any[][] = [['Mes', '#', 'Cliente', 'RUT', 'Chasis', 'Tipo']]
+    const allVpp: any[][] = [['Mes', '#', 'Cliente', 'RUT', 'PPU']]
+    const allMpp: any[][] = [['Mes', '#', 'Cliente', 'RUT', 'Tipo Producto']]
+    const resumenAnual: any[][] = [['Mes', 'Ventas', 'Créditos', 'Penetración', 'Seguros', 'VPP', 'MPP', 'Comisión Total']]
+
+    for (let m = 0; m < 12; m++) {
+      const data = await fetchMonthDetail(selectedYear, m, user.id)
+      const { sales, credits, insurance, vpp, mpp } = data
+      const monthLabel = MONTHS_FULL[m]
+      const creditCount = credits.length
+      const dealerTotal = credits.reduce((s, c) => s + Number(c.dealer_cost), 0)
+      const penetration = sales.length > 0 ? Math.round((creditCount / sales.length) * 100) : 0
+      const creditComm = Math.round(dealerTotal / 1.19 * getCreditRate(creditCount))
+      const vppComm = vpp.length * VPP_COMMISSION
+      const insuranceComm = insurance.length * 23000
+      const mppComm = mpp.reduce((s, x: any) => s + (MPP_COMMISSION[x.product_type] ?? 0), 0)
+      const salesComm = sales.length * 70000
+      resumenAnual.push([monthLabel, sales.length, creditCount, `${penetration}%`, insurance.length, vpp.length, mpp.length, salesComm + creditComm + insuranceComm + vppComm + mppComm])
+      sales.forEach((s: any, i: number) => allVentas.push([monthLabel, i + 1, s.customer_name, s.rut, s.model, s.chassis, s.odv, s.purchase_type, s.status ?? '']))
+      credits.forEach((c: any, i: number) => allCreditos.push([monthLabel, i + 1, c.customer_name, c.rut, Number(c.dealer_cost), c.credit_type]))
+      insurance.forEach((s: any, i: number) => allSeguros.push([monthLabel, i + 1, s.customer_name, s.rut, s.chassis, s.insurance_type]))
+      vpp.forEach((v: any, i: number) => allVpp.push([monthLabel, i + 1, v.client_name, v.rut, v.ppu]))
+      mpp.forEach((x: any, i: number) => allMpp.push([monthLabel, i + 1, x.client_name, x.rut, x.product_type]))
+    }
+
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(resumenAnual), 'Resumen Anual')
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(allVentas), 'Ventas')
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(allCreditos), 'Créditos')
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(allSeguros), 'Seguros')
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(allVpp), 'VPP')
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(allMpp), 'MPP')
+    XLSX.writeFile(wb, `AutoGestion_${selectedYear}.xlsx`)
+    setExporting(false)
+  }
+
   return (
     <View style={styles.container}>
       <View style={[styles.topBar, isMobile && styles.topBarMobile]}>
@@ -117,6 +250,34 @@ export default function DashboardScreen() {
             <TouchableOpacity style={styles.addYearBtn} onPress={() => { addYear(nextYear); setSelectedYear(nextYear) }}>
               <Text style={styles.addYearBtnText}>+ {nextYear}</Text>
             </TouchableOpacity>
+          </View>
+          <View style={{ position: 'relative' as any }}>
+            <TouchableOpacity
+              style={styles.exportBtn}
+              onPress={() => setShowExportMenu(v => !v)}
+              disabled={exporting}
+            >
+              {exporting
+                ? <ActivityIndicator color={Colors.white} size="small" />
+                : <Text style={styles.exportBtnText}>⬇ Exportar</Text>
+              }
+            </TouchableOpacity>
+            {showExportMenu && (
+              <>
+                <TouchableOpacity style={{ position: 'fixed' as any, inset: 0, zIndex: 200 } as any} onPress={() => setShowExportMenu(false)} />
+                <View style={styles.exportMenu}>
+                  <TouchableOpacity style={styles.exportMenuItem} onPress={handleExportMonth}>
+                    <Text style={styles.exportMenuItemTitle}>📅 Mes específico</Text>
+                    <Text style={styles.exportMenuItemSub}>{MONTHS_FULL[selectedMonth]} {selectedYear}</Text>
+                  </TouchableOpacity>
+                  <View style={styles.exportMenuDivider} />
+                  <TouchableOpacity style={styles.exportMenuItem} onPress={handleExportYear}>
+                    <Text style={styles.exportMenuItemTitle}>📆 Año completo</Text>
+                    <Text style={styles.exportMenuItemSub}>Todos los meses de {selectedYear}</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
           </View>
           <AlertBell />
         </View>
@@ -289,6 +450,17 @@ const styles = StyleSheet.create({
   yearBtnTextActive: { color: Colors.white, fontWeight: 'bold' },
   addYearBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1.5, borderColor: Colors.border, borderStyle: 'dashed' } as any,
   addYearBtnText: { fontSize: 13, fontWeight: '600', color: Colors.textLight },
+  exportBtn: { backgroundColor: Colors.success, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8, minWidth: 110, alignItems: 'center' },
+  exportBtnText: { color: Colors.white, fontWeight: 'bold', fontSize: 13 },
+  exportMenu: {
+    position: 'absolute' as any, top: 44, right: 0, zIndex: 201,
+    backgroundColor: Colors.white, borderRadius: 10, borderWidth: 1, borderColor: Colors.border,
+    shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 12, elevation: 8, minWidth: 220,
+  },
+  exportMenuItem: { padding: 16 },
+  exportMenuItemTitle: { fontSize: 14, fontWeight: '600', color: Colors.text, marginBottom: 2 },
+  exportMenuItemSub: { fontSize: 12, color: Colors.textLight },
+  exportMenuDivider: { height: 1, backgroundColor: Colors.border },
   scrollArea: { flex: 1 },
   content: { padding: 32, gap: 16 },
   contentMobile: { padding: 16, gap: 12 },
