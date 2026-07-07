@@ -453,9 +453,9 @@ const styles = StyleSheet.create({
   exportBtn: { backgroundColor: Colors.success, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8, minWidth: 110, alignItems: 'center' },
   exportBtnText: { color: Colors.white, fontWeight: 'bold', fontSize: 13 },
   exportMenu: {
-    position: 'absolute' as any, top: 44, right: 0, zIndex: 201,
+    position: 'fixed' as any, top: 60, right: 80, zIndex: 9999,
     backgroundColor: Colors.white, borderRadius: 10, borderWidth: 1, borderColor: Colors.border,
-    shadowColor: '#000', shadowOpacity: 0.12, shadowRadius: 12, elevation: 8, minWidth: 220,
+    shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 16, elevation: 10, minWidth: 220,
   },
   exportMenuItem: { padding: 16 },
   exportMenuItemTitle: { fontSize: 14, fontWeight: '600', color: Colors.text, marginBottom: 2 },
