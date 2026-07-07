@@ -5,6 +5,7 @@ import { Colors } from '../../constants/colors'
 import { usePeriod } from '../../contexts/PeriodContext'
 import AlertBell from '../../components/AlertBell'
 import * as XLSX from 'xlsx'
+import { createPortal } from 'react-dom'
 
 const SALES_COMMISSION = [
   { min: 15, max: Infinity, rate: 0.12 },
@@ -251,34 +252,16 @@ export default function DashboardScreen() {
               <Text style={styles.addYearBtnText}>+ {nextYear}</Text>
             </TouchableOpacity>
           </View>
-          <View style={{ position: 'relative' as any }}>
-            <TouchableOpacity
-              style={styles.exportBtn}
-              onPress={() => setShowExportMenu(v => !v)}
-              disabled={exporting}
-            >
-              {exporting
-                ? <ActivityIndicator color={Colors.white} size="small" />
-                : <Text style={styles.exportBtnText}>⬇ Exportar</Text>
-              }
-            </TouchableOpacity>
-            {showExportMenu && (
-              <>
-                <TouchableOpacity style={{ position: 'fixed' as any, inset: 0, zIndex: 200 } as any} onPress={() => setShowExportMenu(false)} />
-                <View style={styles.exportMenu}>
-                  <TouchableOpacity style={styles.exportMenuItem} onPress={handleExportMonth}>
-                    <Text style={styles.exportMenuItemTitle}>📅 Mes específico</Text>
-                    <Text style={styles.exportMenuItemSub}>{MONTHS_FULL[selectedMonth]} {selectedYear}</Text>
-                  </TouchableOpacity>
-                  <View style={styles.exportMenuDivider} />
-                  <TouchableOpacity style={styles.exportMenuItem} onPress={handleExportYear}>
-                    <Text style={styles.exportMenuItemTitle}>📆 Año completo</Text>
-                    <Text style={styles.exportMenuItemSub}>Todos los meses de {selectedYear}</Text>
-                  </TouchableOpacity>
-                </View>
-              </>
-            )}
-          </View>
+          <TouchableOpacity
+            style={styles.exportBtn}
+            onPress={() => setShowExportMenu(v => !v)}
+            disabled={exporting}
+          >
+            {exporting
+              ? <ActivityIndicator color={Colors.white} size="small" />
+              : <Text style={styles.exportBtnText}>⬇ Exportar</Text>
+            }
+          </TouchableOpacity>
           <AlertBell />
         </View>
       </View>
@@ -430,6 +413,36 @@ export default function DashboardScreen() {
 
         </ScrollView>
       )}
+      {showExportMenu && typeof document !== 'undefined' && createPortal(
+        <>
+          <div onClick={() => setShowExportMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 9000 }} />
+          <div style={{
+            position: 'fixed', top: 60, right: 80, zIndex: 9001,
+            backgroundColor: 'white', borderRadius: 10, border: `1px solid ${Colors.border}`,
+            boxShadow: '0 8px 24px rgba(0,0,0,0.15)', minWidth: 240, overflow: 'hidden',
+          }}>
+            <div
+              onClick={handleExportMonth}
+              style={{ padding: 16, cursor: 'pointer', borderBottom: `1px solid ${Colors.border}` }}
+              onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#F8F9FA')}
+              onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'white')}
+            >
+              <div style={{ fontSize: 14, fontWeight: 600, color: Colors.text, marginBottom: 3 }}>📅 Mes específico</div>
+              <div style={{ fontSize: 12, color: Colors.textLight }}>{MONTHS_FULL[selectedMonth]} {selectedYear}</div>
+            </div>
+            <div
+              onClick={handleExportYear}
+              style={{ padding: 16, cursor: 'pointer' }}
+              onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#F8F9FA')}
+              onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'white')}
+            >
+              <div style={{ fontSize: 14, fontWeight: 600, color: Colors.text, marginBottom: 3 }}>📆 Año completo</div>
+              <div style={{ fontSize: 12, color: Colors.textLight }}>Todos los meses de {selectedYear}</div>
+            </div>
+          </div>
+        </>,
+        document.body
+      )}
     </View>
   )
 }
@@ -452,15 +465,6 @@ const styles = StyleSheet.create({
   addYearBtnText: { fontSize: 13, fontWeight: '600', color: Colors.textLight },
   exportBtn: { backgroundColor: Colors.success, paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8, minWidth: 110, alignItems: 'center' },
   exportBtnText: { color: Colors.white, fontWeight: 'bold', fontSize: 13 },
-  exportMenu: {
-    position: 'fixed' as any, top: 60, right: 80, zIndex: 9999,
-    backgroundColor: Colors.white, borderRadius: 10, borderWidth: 1, borderColor: Colors.border,
-    shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 16, elevation: 10, minWidth: 220,
-  },
-  exportMenuItem: { padding: 16 },
-  exportMenuItemTitle: { fontSize: 14, fontWeight: '600', color: Colors.text, marginBottom: 2 },
-  exportMenuItemSub: { fontSize: 12, color: Colors.textLight },
-  exportMenuDivider: { height: 1, backgroundColor: Colors.border },
   scrollArea: { flex: 1 },
   content: { padding: 32, gap: 16 },
   contentMobile: { padding: 16, gap: 12 },
