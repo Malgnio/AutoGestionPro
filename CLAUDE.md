@@ -220,8 +220,24 @@ transition: 'transform 0.3s ease'
 - **Sin tag** — (2026-07-01): modo vista 👁️ en todas las grillas, MPP ingreso manual, dashboard Seguros KPI, meta penetración editable, estado "Llegada Suc." en ventas
 - **Sin tag** — (2026-07-02): pantalla Clientes, módulo "Compra con Crédito" en ventas, fix título case con acentos, fix Meta promedio dashboard, reorden KPIs dashboard
 - **Sin tag** — (2026-07-05): responsive Dashboard + Sidebar móvil, inicio responsive Ventas, fix AlertBell móvil
+- **Sin tag** — (2026-07-06): exportar Excel desde Dashboard (mes específico + año completo), datos históricos 2025 completos (Ene-Jun)
+
+## Exportar Excel (Dashboard)
+- Botón "⬇ Exportar" verde en el topBar del Dashboard
+- Menú via `createPortal(document.body)` — evita quedar detrás de otros elementos
+- **Mes específico**: exporta el `selectedMonth`+`selectedYear` del PeriodContext
+- **Año completo**: itera los 12 meses, una fila por registro con columna "Mes"
+- Hojas: Resumen (KPIs), Ventas, Créditos, Seguros, VPP, MPP
+- Librería: `xlsx` (SheetJS)
+
+## Datos históricos cargados (Franco Parodi)
+- 2025: Enero a Junio completos (Ventas, Créditos, Seguros, VPP, MPP)
+- 2025: Julio a Diciembre completos
+- Pendiente: Diciembre 2024 hacia atrás
 
 ## Pendiente
+- Continuar datos históricos: Diciembre 2024 hacia atrás
+- Terminar responsive: Créditos, Seguros, VPP, MPP, Sueldo, Clientes (Ventas parcial — drawer aún con problema de ancho)
 - Verificar políticas UPDATE en otras tablas (credits, insurance, vpp, mpp) — sales ya tiene la suya
 - Perfil gerente con vista consolidada (futuro)
 - Considerar SMTP propio en Supabase para eliminar límite de emails de recuperación
