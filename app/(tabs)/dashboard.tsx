@@ -221,7 +221,12 @@ export default function DashboardScreen() {
                     return (
                       <View
                         key={i}
-                        style={[styles.barGroup, isHovered && { zIndex: 100 } as any]}
+                        style={[
+                          styles.barGroup,
+                          i % 2 === 0 && styles.barGroupAlt,
+                          isHovered && styles.barGroupHovered,
+                          isHovered && { zIndex: 100 } as any,
+                        ]}
                         // @ts-ignore
                         onMouseEnter={() => setHoveredMonth(i)}
                         onMouseLeave={() => setHoveredMonth(null)}
@@ -334,7 +339,9 @@ const styles = StyleSheet.create({
   chartWrapper: { position: 'relative' as any, overflow: 'visible' as any },
   chart: { flexDirection: 'row', alignItems: 'flex-end', height: 180, gap: 4, overflow: 'visible' as any },
   lineDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: Colors.accent, borderWidth: 2, borderColor: Colors.white, zIndex: 1 },
-  barGroup: { flex: 1, alignItems: 'center', gap: 4, zIndex: 1, minWidth: 44 },
+  barGroup: { flex: 1, alignItems: 'center', gap: 4, zIndex: 1, minWidth: 52, paddingHorizontal: 4, paddingBottom: 4, borderRadius: 6 },
+  barGroupAlt: { backgroundColor: '#F0F4F8' },
+  barGroupHovered: { backgroundColor: '#E3EDF7' },
   bars: { flexDirection: 'row', alignItems: 'flex-end', gap: 2, height: 150 },
   barWrapper: { alignItems: 'center', justifyContent: 'flex-end' },
   bar: { width: 14, borderRadius: 3, minHeight: 2 },
