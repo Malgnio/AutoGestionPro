@@ -181,6 +181,7 @@ transition: 'transform 0.3s ease'
 - "Meta promedio" en tarjeta Penetración = promedio de metas configuradas en tabla `targets` (default 70% si no hay registro)
 - Al hover sobre cada barra muestra: Ventas, Créditos, VPP, MPP, Seguros y Comisión total del mes
 - Seguros incluidos en query del dashboard y en cálculo de comisión total ($23.000 × cantidad)
+- Gráfico con fondos alternados por mes: pares = `#F0F4F8`, impares = transparente, hover = `#E3EDF7`
 
 ## Ventas — Módulo "Compra con Crédito"
 - Botón "+ Compra con Crédito" en el drawer de ventas, debajo de "Tipo de compra"
@@ -226,14 +227,20 @@ transition: 'transform 0.3s ease'
 - **Sin tag** — (2026-07-02): pantalla Clientes, módulo "Compra con Crédito" en ventas, fix título case con acentos, fix Meta promedio dashboard, reorden KPIs dashboard
 - **Sin tag** — (2026-07-05): responsive Dashboard + Sidebar móvil, inicio responsive Ventas, fix AlertBell móvil
 - **Sin tag** — (2026-07-06): exportar Excel desde Dashboard (mes específico + año completo), datos históricos 2025 completos (Ene-Jun)
+- **Sin tag** — (2026-07-08): políticas UPDATE RLS en todas las tablas, botón "Exportar Mes" en todas las pantallas, rediseño Excel con xlsx-js-style, gráfico dashboard con fondos alternados por mes, botón "Compra con Crédito" detecta duplicados al abrir drawer
 
-## Exportar Excel (Dashboard)
-- Botón "⬇ Exportar" verde en el topBar del Dashboard
-- Menú via `createPortal(document.body)` — evita quedar detrás de otros elementos
-- **Mes específico**: exporta el `selectedMonth`+`selectedYear` del PeriodContext
-- **Año completo**: itera los 12 meses, una fila por registro con columna "Mes"
-- Hojas: Resumen (KPIs), Ventas, Créditos, Seguros, VPP, MPP
-- Librería: `xlsx` (SheetJS)
+## Exportar Excel
+- **Dashboard**: botón "⬇ Exportar Año" verde — exporta año completo directamente (sin menú)
+- **Ventas, Créditos, Seguros, VPP, MPP**: botón "⬇ Exportar Mes" verde en el header de cada pantalla
+- Lógica centralizada en `lib/exportMonth.ts` — funciones `exportMonth(year, month)` y `exportYear(year)`
+- Librería: `xlsx-js-style` (fork de SheetJS con soporte de estilos de celda)
+- **Diseño Excel**: cabeceras azul oscuro (#1B3A5C) con texto blanco, filas alternadas (blanco/#EBF2FA), montos con formato `$#,##0`, penetración como `%`, columna "Sin IVA" en Créditos, columna "Comisión" en Seguros/VPP/MPP, título verde en Resumen
+- Hojas: Resumen (KPIs + total comisión), Ventas, Créditos, Seguros, VPP, MPP
+
+## Ventas — Botón "Compra con Crédito" inteligente
+- Al abrir el drawer de edición, consulta si ya existe crédito para ese RUT+mes
+- Si existe: botón muestra "✓ Ya asociada a un crédito" en gris deshabilitado
+- Si no existe: funciona normalmente (módulo verde desplegable)
 
 ## Datos históricos cargados (Franco Parodi)
 - 2025: Enero a Junio completos (Ventas, Créditos, Seguros, VPP, MPP)
