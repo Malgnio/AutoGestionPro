@@ -4,7 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { Colors } from '../../constants/colors'
 import { usePeriod } from '../../contexts/PeriodContext'
 import AlertBell from '../../components/AlertBell'
-import * as XLSX from 'xlsx'
+import { exportYear } from '../../lib/exportMonth'
 
 const SALES_COMMISSION = [
   { min: 15, max: Infinity, rate: 0.12 },
@@ -107,112 +107,9 @@ export default function DashboardScreen() {
   const maxBar = Math.max(...monthData.map(m => Math.max(m.sales, m.credits, m.vpp, m.mppCount)), 1)
   const BAR_HEIGHT = 140
 
-  async function fetchMonthDetail(year: number, month: number, userId: string) {
-    const start = new Date(year, month, 1).toISOString().split('T')[0]
-    const end = new Date(year, month + 1, 0).toISOString().split('T')[0]
-    const [{ data: sales }, { data: credits }, { data: insurance }, { data: vpp }, { data: mpp }] = await Promise.all([
-      supabase.from('sales').select('customer_name, rut, model, chassis, odv, purchase_type, status').eq('user_id', userId).gte('sale_month', start).lte('sale_month', end).order('created_at', { ascending: true }),
-      supabase.from('credits').select('customer_name, rut, dealer_cost, credit_type').eq('user_id', userId).gte('sale_month', start).lte('sale_month', end).order('created_at', { ascending: true }),
-      supabase.from('insurance').select('customer_name, rut, chassis, insurance_type').eq('user_id', userId).gte('sale_month', start).lte('sale_month', end).order('created_at', { ascending: true }),
-      supabase.from('vpp').select('client_name, rut, ppu').eq('user_id', userId).gte('sale_month', start).lte('sale_month', end).order('created_at', { ascending: true }),
-      supabase.from('mpp').select('client_name, rut, product_type').eq('user_id', userId).gte('sale_month', start).lte('sale_month', end).order('created_at', { ascending: true }),
-    ])
-    return { sales: sales ?? [], credits: credits ?? [], insurance: insurance ?? [], vpp: vpp ?? [], mpp: mpp ?? [] }
-  }
-
-  function buildSheets(monthLabel: string, data: Awaited<ReturnType<typeof fetchMonthDetail>>, mIdx: number) {
-    const { sales, credits, insurance, vpp, mpp } = data
-    const creditCount = credits.length
-    const dealerTotal = credits.reduce((s, c) => s + Number(c.dealer_cost), 0)
-    const penetration = sales.length > 0 ? Math.round((creditCount / sales.length) * 100) : 0
-    const creditComm = Math.round(dealerTotal / 1.19 * getCreditRate(creditCount))
-    const vppComm = vpp.length * VPP_COMMISSION
-    const insuranceComm = insurance.length * 23000
-    const mppComm = mpp.reduce((s, m: any) => s + (MPP_COMMISSION[m.product_type] ?? 0), 0)
-    const salesComm = sales.length * 70000
-
-    const resumen = [
-      ['Mes', monthLabel],
-      [],
-      ['Métrica', 'Cantidad', 'Comisión'],
-      ['Ventas', sales.length, salesComm],
-      ['Créditos', creditCount, creditComm],
-      ['Penetración crédito', `${penetration}%`, ''],
-      ['Seguros', insurance.length, insuranceComm],
-      ['VPP', vpp.length, vppComm],
-      ['MPP', mpp.length, mppComm],
-      [],
-      ['Total comisión', '', salesComm + creditComm + insuranceComm + vppComm + mppComm],
-    ]
-
-    const ventasRows = [
-      ['#', 'Cliente', 'RUT', 'Modelo', 'Chasis', 'OdV', 'Tipo', 'Estado'],
-      ...sales.map((s: any, i: number) => [i + 1, s.customer_name, s.rut, s.model, s.chassis, s.odv, s.purchase_type, s.status ?? '']),
-    ]
-
-    const creditosRows = [
-      ['#', 'Cliente', 'RUT', 'C.Dealer', 'Tipo'],
-      ...credits.map((c: any, i: number) => [i + 1, c.customer_name, c.rut, Number(c.dealer_cost), c.credit_type]),
-    ]
-
-    const segurosRows = [
-      ['#', 'Cliente', 'RUT', 'Chasis', 'Tipo'],
-      ...insurance.map((s: any, i: number) => [i + 1, s.customer_name, s.rut, s.chassis, s.insurance_type]),
-    ]
-
-    const vppRows = [
-      ['#', 'Cliente', 'RUT', 'PPU'],
-      ...vpp.map((v: any, i: number) => [i + 1, v.client_name, v.rut, v.ppu]),
-    ]
-
-    const mppRows = [
-      ['#', 'Cliente', 'RUT', 'Tipo Producto'],
-      ...mpp.map((m: any, i: number) => [i + 1, m.client_name, m.rut, m.product_type]),
-    ]
-
-    return { resumen, ventasRows, creditosRows, segurosRows, vppRows, mppRows }
-  }
-
   async function handleExportYear() {
     setExporting(true)
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { setExporting(false); return }
-
-    const wb = XLSX.utils.book_new()
-    const allVentas: any[][] = [['Mes', '#', 'Cliente', 'RUT', 'Modelo', 'Chasis', 'OdV', 'Tipo', 'Estado']]
-    const allCreditos: any[][] = [['Mes', '#', 'Cliente', 'RUT', 'C.Dealer', 'Tipo']]
-    const allSeguros: any[][] = [['Mes', '#', 'Cliente', 'RUT', 'Chasis', 'Tipo']]
-    const allVpp: any[][] = [['Mes', '#', 'Cliente', 'RUT', 'PPU']]
-    const allMpp: any[][] = [['Mes', '#', 'Cliente', 'RUT', 'Tipo Producto']]
-    const resumenAnual: any[][] = [['Mes', 'Ventas', 'Créditos', 'Penetración', 'Seguros', 'VPP', 'MPP', 'Comisión Total']]
-
-    for (let m = 0; m < 12; m++) {
-      const data = await fetchMonthDetail(selectedYear, m, user.id)
-      const { sales, credits, insurance, vpp, mpp } = data
-      const monthLabel = MONTHS_FULL[m]
-      const creditCount = credits.length
-      const dealerTotal = credits.reduce((s, c) => s + Number(c.dealer_cost), 0)
-      const penetration = sales.length > 0 ? Math.round((creditCount / sales.length) * 100) : 0
-      const creditComm = Math.round(dealerTotal / 1.19 * getCreditRate(creditCount))
-      const vppComm = vpp.length * VPP_COMMISSION
-      const insuranceComm = insurance.length * 23000
-      const mppComm = mpp.reduce((s, x: any) => s + (MPP_COMMISSION[x.product_type] ?? 0), 0)
-      const salesComm = sales.length * 70000
-      resumenAnual.push([monthLabel, sales.length, creditCount, `${penetration}%`, insurance.length, vpp.length, mpp.length, salesComm + creditComm + insuranceComm + vppComm + mppComm])
-      sales.forEach((s: any, i: number) => allVentas.push([monthLabel, i + 1, s.customer_name, s.rut, s.model, s.chassis, s.odv, s.purchase_type, s.status ?? '']))
-      credits.forEach((c: any, i: number) => allCreditos.push([monthLabel, i + 1, c.customer_name, c.rut, Number(c.dealer_cost), c.credit_type]))
-      insurance.forEach((s: any, i: number) => allSeguros.push([monthLabel, i + 1, s.customer_name, s.rut, s.chassis, s.insurance_type]))
-      vpp.forEach((v: any, i: number) => allVpp.push([monthLabel, i + 1, v.client_name, v.rut, v.ppu]))
-      mpp.forEach((x: any, i: number) => allMpp.push([monthLabel, i + 1, x.client_name, x.rut, x.product_type]))
-    }
-
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(resumenAnual), 'Resumen Anual')
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(allVentas), 'Ventas')
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(allCreditos), 'Créditos')
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(allSeguros), 'Seguros')
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(allVpp), 'VPP')
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(allMpp), 'MPP')
-    XLSX.writeFile(wb, `AutoGestion_${selectedYear}.xlsx`)
+    await exportYear(selectedYear)
     setExporting(false)
   }
 
