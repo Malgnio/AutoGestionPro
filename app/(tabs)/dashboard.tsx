@@ -238,7 +238,7 @@ export default function DashboardScreen() {
           >
             {exporting
               ? <ActivityIndicator color={Colors.white} size="small" />
-              : <Text style={styles.exportBtnText}>⬇ Exportar</Text>
+              : <Text style={styles.exportBtnText}>⬇ Exportar Año</Text>
             }
           </TouchableOpacity>
           <AlertBell />
