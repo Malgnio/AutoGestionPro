@@ -71,7 +71,12 @@ hooks/useAuth.ts
 - `alert_actions` — alertas gestionadas (id, user_id, sale_id, created_at)
 
 Todas las tablas tienen RLS habilitado con política `auth.uid() = user_id`.
-**IMPORTANTE**: La tabla `sales` requiere política UPDATE explícita — ya creada: "Vendedor actualiza sus ventas".
+**IMPORTANTE**: Todas las tablas requieren política UPDATE explícita — ya creadas:
+- `sales`: "Vendedor actualiza sus ventas"
+- `credits`: "Vendedor actualiza sus créditos"
+- `insurance`: "Vendedor actualiza sus seguros"
+- `vpp`: "Vendedor actualiza sus VPP"
+- `mpp`: "Vendedor actualiza sus MPP"
 
 ## Tablas de comisión
 **Ventas** ($70.000 por unidad):
@@ -238,6 +243,6 @@ transition: 'transform 0.3s ease'
 ## Pendiente
 - Continuar datos históricos: Diciembre 2024 hacia atrás
 - Terminar responsive: Créditos, Seguros, VPP, MPP, Sueldo, Clientes (Ventas parcial — drawer aún con problema de ancho)
-- Verificar políticas UPDATE en otras tablas (credits, insurance, vpp, mpp) — sales ya tiene la suya
+- ~~Verificar políticas UPDATE en otras tablas~~ — todas creadas (sales, credits, insurance, vpp, mpp)
 - Perfil gerente con vista consolidada (futuro)
 - Considerar SMTP propio en Supabase para eliminar límite de emails de recuperación
