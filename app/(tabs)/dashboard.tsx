@@ -5,7 +5,6 @@ import { Colors } from '../../constants/colors'
 import { usePeriod } from '../../contexts/PeriodContext'
 import AlertBell from '../../components/AlertBell'
 import * as XLSX from 'xlsx'
-import { createPortal } from 'react-dom'
 
 const SALES_COMMISSION = [
   { min: 15, max: Infinity, rate: 0.12 },
@@ -45,13 +44,12 @@ const MONTHS_FULL = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Jul
 export default function DashboardScreen() {
   const { width } = useWindowDimensions()
   const isMobile = width < 768
-  const { selectedYear, setSelectedYear, availableYears, addYear, selectedMonth, setSelectedMonth } = usePeriod()
+  const { selectedYear, setSelectedYear, availableYears, addYear } = usePeriod()
   const nextYear = Math.max(...availableYears) + 1
   const [loading, setLoading] = useState(true)
   const [monthData, setMonthData] = useState<MonthData[]>(Array(12).fill({ sales: 0, credits: 0, dealer: 0, vpp: 0, mppCommission: 0, mppCount: 0, insurance: 0 }))
   const [hoveredMonth, setHoveredMonth] = useState<number | null>(null)
   const [avgTarget, setAvgTarget] = useState(70)
-  const [showExportMenu, setShowExportMenu] = useState(false)
   const [exporting, setExporting] = useState(false)
 
   useEffect(() => { loadData() }, [selectedYear])
@@ -175,27 +173,8 @@ export default function DashboardScreen() {
     return { resumen, ventasRows, creditosRows, segurosRows, vppRows, mppRows }
   }
 
-  async function handleExportMonth() {
-    setExporting(true); setShowExportMenu(false)
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) { setExporting(false); return }
-    const monthLabel = `${MONTHS_FULL[selectedMonth]} ${selectedYear}`
-    const data = await fetchMonthDetail(selectedYear, selectedMonth, user.id)
-    const { resumen, ventasRows, creditosRows, segurosRows, vppRows, mppRows } = buildSheets(monthLabel, data, selectedMonth)
-
-    const wb = XLSX.utils.book_new()
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(resumen), 'Resumen')
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(ventasRows), 'Ventas')
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(creditosRows), 'Créditos')
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(segurosRows), 'Seguros')
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(vppRows), 'VPP')
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(mppRows), 'MPP')
-    XLSX.writeFile(wb, `AutoGestion_${MONTHS_FULL[selectedMonth]}_${selectedYear}.xlsx`)
-    setExporting(false)
-  }
-
   async function handleExportYear() {
-    setExporting(true); setShowExportMenu(false)
+    setExporting(true)
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { setExporting(false); return }
 
@@ -254,7 +233,7 @@ export default function DashboardScreen() {
           </View>
           <TouchableOpacity
             style={styles.exportBtn}
-            onPress={() => setShowExportMenu(v => !v)}
+            onPress={handleExportYear}
             disabled={exporting}
           >
             {exporting
@@ -412,36 +391,6 @@ export default function DashboardScreen() {
           </View>
 
         </ScrollView>
-      )}
-      {showExportMenu && typeof document !== 'undefined' && createPortal(
-        <>
-          <div onClick={() => setShowExportMenu(false)} style={{ position: 'fixed', inset: 0, zIndex: 9000 }} />
-          <div style={{
-            position: 'fixed', top: 60, right: 80, zIndex: 9001,
-            backgroundColor: 'white', borderRadius: 10, border: `1px solid ${Colors.border}`,
-            boxShadow: '0 8px 24px rgba(0,0,0,0.15)', minWidth: 240, overflow: 'hidden',
-          }}>
-            <div
-              onClick={handleExportMonth}
-              style={{ padding: 16, cursor: 'pointer', borderBottom: `1px solid ${Colors.border}` }}
-              onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#F8F9FA')}
-              onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'white')}
-            >
-              <div style={{ fontSize: 14, fontWeight: 600, color: Colors.text, marginBottom: 3 }}>📅 Mes específico</div>
-              <div style={{ fontSize: 12, color: Colors.textLight }}>{MONTHS_FULL[selectedMonth]} {selectedYear}</div>
-            </div>
-            <div
-              onClick={handleExportYear}
-              style={{ padding: 16, cursor: 'pointer' }}
-              onMouseEnter={e => (e.currentTarget.style.backgroundColor = '#F8F9FA')}
-              onMouseLeave={e => (e.currentTarget.style.backgroundColor = 'white')}
-            >
-              <div style={{ fontSize: 14, fontWeight: 600, color: Colors.text, marginBottom: 3 }}>📆 Año completo</div>
-              <div style={{ fontSize: 12, color: Colors.textLight }}>Todos los meses de {selectedYear}</div>
-            </div>
-          </div>
-        </>,
-        document.body
       )}
     </View>
   )
