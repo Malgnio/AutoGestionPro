@@ -7,6 +7,7 @@ import { usePeriod } from '../../contexts/PeriodContext'
 import ClientSearch from '../../components/ClientSearch'
 import AlertBell from '../../components/AlertBell'
 import { validateRut, formatRut } from '../../lib/validateRut'
+import { exportMonth } from '../../lib/exportMonth'
 
 type VPP = {
   id: string
@@ -29,6 +30,7 @@ export default function VPPScreen() {
   const [error, setError] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [viewMode, setViewMode] = useState(false)
+  const [exporting, setExporting] = useState(false)
 
   const [clientName, setClientName] = useState('')
   const [rut, setRut] = useState('')
@@ -102,6 +104,9 @@ export default function VPPScreen() {
           <Text style={styles.pageTitle}>VPP — {MONTHS[selectedMonth]} {selectedYear}</Text>
           <View style={styles.headerActions}>
             <AlertBell />
+            <TouchableOpacity style={styles.exportBtn} onPress={async () => { setExporting(true); await exportMonth(selectedYear, selectedMonth); setExporting(false) }} disabled={exporting}>
+              {exporting ? <ActivityIndicator color={Colors.white} size="small" /> : <Text style={styles.exportBtnText}>⬇ Exportar Mes</Text>}
+            </TouchableOpacity>
             <TouchableOpacity style={styles.addButton} onPress={() => { resetForm(); setShowForm(true) }}>
               <Text style={styles.addButtonText}>+ Agregar VPP</Text>
             </TouchableOpacity>
@@ -250,6 +255,8 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 32, paddingBottom: 16 },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   pageTitle: { fontSize: 24, fontWeight: 'bold', color: Colors.text },
+  exportBtn: { backgroundColor: Colors.success, paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8, minWidth: 130, alignItems: 'center' },
+  exportBtnText: { color: Colors.white, fontWeight: 'bold', fontSize: 13 },
   addButton: { backgroundColor: Colors.primary, paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8 },
   addButtonText: { color: Colors.white, fontWeight: 'bold', fontSize: 14 },
   kpiRow: { flexDirection: 'row', gap: 16, paddingHorizontal: 32, paddingTop: 4, paddingBottom: 4 },
