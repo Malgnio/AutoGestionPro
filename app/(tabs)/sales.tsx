@@ -117,6 +117,7 @@ export default function SalesScreen() {
   const [creditError, setCreditError] = useState('')
   const [creditSaving, setCreditSaving] = useState(false)
   const [creditSent, setCreditSent] = useState(false)
+  const [creditAlreadyExists, setCreditAlreadyExists] = useState(false)
 
   useEffect(() => { loadSales(); loadTarget() }, [selectedYear, selectedMonth])
 
@@ -163,7 +164,7 @@ export default function SalesScreen() {
     setRequestedDate(''); setArrivalDate(''); setInvoicedDate(''); setDeliveryDate('')
     setError(''); setEditingId(null)
     setShowCreditModule(false); setCreditDealer(''); setCreditType('CI')
-    setCreditError(''); setCreditSent(false)
+    setCreditError(''); setCreditSent(false); setCreditAlreadyExists(false)
   }
 
   async function handleSendCredit() {
@@ -199,7 +200,7 @@ export default function SalesScreen() {
     }
   }
 
-  function openEdit(item: Sale) {
+  async function openEdit(item: Sale) {
     setViewMode(false)
     setEditingId(item.id)
     setCustomerName(item.customer_name)
@@ -214,7 +215,17 @@ export default function SalesScreen() {
     setInvoicedDate(item.invoiced_date ?? '')
     setDeliveryDate(item.delivery_date ?? '')
     setError('')
+    setCreditAlreadyExists(false)
+    setCreditSent(false)
     setShowForm(true)
+    // Verificar si ya existe crédito para este RUT en el mes
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user) {
+      const saleMonth = new Date(selectedYear, selectedMonth, 1).toISOString().split('T')[0]
+      const { data } = await supabase.from('credits').select('id')
+        .eq('user_id', user.id).eq('rut', formatRut(item.rut)).eq('sale_month', saleMonth).maybeSingle()
+      if (data) setCreditAlreadyExists(true)
+    }
   }
 
   function openView(item: Sale) {
@@ -498,12 +509,22 @@ export default function SalesScreen() {
           {!viewMode && (
             <View style={styles.creditModuleWrapper}>
               <TouchableOpacity
-                style={[styles.creditToggleBtn, creditSent && { backgroundColor: Colors.success, borderColor: Colors.success }]}
-                onPress={() => { if (!creditSent) { setShowCreditModule(!showCreditModule); setCreditError('') } }}
-                activeOpacity={creditSent ? 1 : 0.7}
+                style={[
+                  styles.creditToggleBtn,
+                  creditSent && { backgroundColor: Colors.success, borderColor: Colors.success },
+                  creditAlreadyExists && { backgroundColor: '#F8F9FA', borderColor: Colors.border, opacity: 0.7 },
+                ]}
+                onPress={() => {
+                  if (!creditSent && !creditAlreadyExists) { setShowCreditModule(!showCreditModule); setCreditError('') }
+                }}
+                activeOpacity={(creditSent || creditAlreadyExists) ? 1 : 0.7}
               >
-                <Text style={[styles.creditToggleBtnText, creditSent && { color: Colors.white }]}>
-                  {creditSent ? '✓ Crédito enviado' : '+ Compra con Crédito'}
+                <Text style={[
+                  styles.creditToggleBtnText,
+                  creditSent && { color: Colors.white },
+                  creditAlreadyExists && { color: Colors.textLight },
+                ]}>
+                  {creditSent ? '✓ Crédito enviado' : creditAlreadyExists ? '✓ Ya asociada a un crédito' : '+ Compra con Crédito'}
                 </Text>
               </TouchableOpacity>
 
