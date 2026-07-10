@@ -19,6 +19,9 @@ type PortfolioRow = {
   id: string
   customer_name: string
   rut: string
+  email: string | null
+  phone: string | null
+  birth_date: string | null
   model: string
   sale_month: string
   hasCredit: boolean
@@ -49,7 +52,7 @@ export default function PortfolioScreen() {
     const end = `${CURRENT_YEAR}-12-31`
 
     const [{ data: sales }, { data: credits }, { data: vpp }, { data: mpp }] = await Promise.all([
-      supabase.from('sales').select('id, customer_name, rut, model, sale_month')
+      supabase.from('sales').select('id, customer_name, rut, email, phone, birth_date, model, sale_month')
         .eq('user_id', user.id).gte('sale_month', start).lte('sale_month', end)
         .order('sale_month', { ascending: true }),
       supabase.from('credits').select('rut').eq('user_id', user.id).gte('sale_month', start).lte('sale_month', end),
@@ -66,6 +69,9 @@ export default function PortfolioScreen() {
       id: s.id,
       customer_name: s.customer_name,
       rut: s.rut,
+      email: s.email ?? null,
+      phone: s.phone ?? null,
+      birth_date: s.birth_date ?? null,
       model: s.model,
       sale_month: s.sale_month,
       hasCredit: creditRuts.has(norm(s.rut)),
@@ -184,6 +190,9 @@ export default function PortfolioScreen() {
                 <Text style={[styles.cell, styles.cellN, styles.headCell]}>#</Text>
                 <Text style={[styles.cell, styles.cellName, styles.headCell]}>Cliente</Text>
                 <Text style={[styles.cell, styles.cellRut, styles.headCell]}>RUT</Text>
+                <Text style={[styles.cell, styles.cellEmail, styles.headCell]}>Correo</Text>
+                <Text style={[styles.cell, styles.cellPhone, styles.headCell]}>Teléfono</Text>
+                <Text style={[styles.cell, styles.cellBirth, styles.headCell]}>Nacimiento</Text>
                 <Text style={[styles.cell, styles.cellModel, styles.headCell]}>Modelo</Text>
                 <Text style={[styles.cell, styles.cellFlag, styles.headCell]}>Crédito</Text>
                 <Text style={[styles.cell, styles.cellYear, styles.headCell]}>Año</Text>
@@ -204,6 +213,9 @@ export default function PortfolioScreen() {
                     <Text style={[styles.cell, styles.cellN]}>{(page - 1) * PAGE_SIZE + index + 1}</Text>
                     <Text style={[styles.cell, styles.cellName]}>{row.customer_name}</Text>
                     <Text style={[styles.cell, styles.cellRut]}>{formatRut(row.rut)}</Text>
+                    <Text style={[styles.cell, styles.cellEmail]} numberOfLines={1}>{row.email || '—'}</Text>
+                    <Text style={[styles.cell, styles.cellPhone]}>{row.phone || '—'}</Text>
+                    <Text style={[styles.cell, styles.cellBirth]}>{row.birth_date ? row.birth_date.split('-').reverse().join('/') : '—'}</Text>
                     <Text style={[styles.cell, styles.cellModel]} numberOfLines={1}>{row.model}</Text>
                     <View style={[styles.cell, styles.cellFlag]}>
                       <View style={[styles.badge, { backgroundColor: row.hasCredit ? Colors.success : '#BDC3C7' }]}>
@@ -280,6 +292,9 @@ const styles = StyleSheet.create({
   cellN: { width: 36 },
   cellName: { flex: 2 },
   cellRut: { flex: 1.2 },
+  cellEmail: { flex: 2, minWidth: 0 },
+  cellPhone: { width: 110 },
+  cellBirth: { width: 100 },
   cellModel: { flex: 1.8 },
   cellFlag: { width: 70, alignItems: 'center' },
   cellYear: { width: 55, textAlign: 'center' },
