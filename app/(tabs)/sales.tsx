@@ -22,6 +22,9 @@ type Sale = {
   invoiced_date: string | null
   delivery_date: string | null
   arrival_date: string | null
+  email: string | null
+  phone: string | null
+  birth_date: string | null
 }
 
 const SALES_COMMISSION = [
@@ -56,13 +59,13 @@ function formatDateCL(dateStr: string | null): string {
   return `${day}/${m}/${y}`
 }
 
-function dateInput(value: string, onChange?: (v: string) => void) {
+function dateInput(value: string, onChange?: (v: string) => void, noMax?: boolean) {
   return (
     // @ts-ignore
     <input
       type="date"
       value={value}
-      max={TODAY}
+      max={noMax ? undefined : TODAY}
       readOnly={!onChange}
       onChange={(e: any) => onChange?.(e.target.value)}
       style={{
@@ -111,6 +114,9 @@ export default function SalesScreen() {
   const [arrivalDate, setArrivalDate] = useState('')
   const [invoicedDate, setInvoicedDate] = useState('')
   const [deliveryDate, setDeliveryDate] = useState('')
+  const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
+  const [birthDate, setBirthDate] = useState('')
 
   const [showCreditModule, setShowCreditModule] = useState(false)
   const [creditDealer, setCreditDealer] = useState('')
@@ -148,7 +154,7 @@ export default function SalesScreen() {
     const end = new Date(selectedYear, selectedMonth + 1, 0).toISOString().split('T')[0]
 
     const [{ data }, { data: credits }] = await Promise.all([
-      supabase.from('sales').select('id,customer_name,rut,model,chassis,odv,purchase_type,sale_month,status,requested_date,arrival_date,invoiced_date,delivery_date,created_at').eq('user_id', user.id)
+      supabase.from('sales').select('id,customer_name,rut,model,chassis,odv,purchase_type,sale_month,status,requested_date,arrival_date,invoiced_date,delivery_date,email,phone,birth_date,created_at').eq('user_id', user.id)
         .gte('sale_month', start).lte('sale_month', end)
         .order('created_at', { ascending: true }),
       supabase.from('credits').select('id').eq('user_id', user.id)
@@ -164,6 +170,7 @@ export default function SalesScreen() {
     setCustomerName(''); setRut(''); setModel(''); setChassis(''); setOdv('')
     setPurchaseType('R'); setStatus(null)
     setRequestedDate(''); setArrivalDate(''); setInvoicedDate(''); setDeliveryDate('')
+    setEmail(''); setPhone(''); setBirthDate('')
     setError(''); setEditingId(null)
     setShowCreditModule(false); setCreditDealer(''); setCreditType('CI')
     setCreditError(''); setCreditSent(false); setCreditAlreadyExists(false)
@@ -216,6 +223,9 @@ export default function SalesScreen() {
     setArrivalDate(item.arrival_date ?? '')
     setInvoicedDate(item.invoiced_date ?? '')
     setDeliveryDate(item.delivery_date ?? '')
+    setEmail(item.email ?? '')
+    setPhone(item.phone ?? '')
+    setBirthDate(item.birth_date ?? '')
     setError('')
     setCreditAlreadyExists(false)
     setCreditSent(false)
@@ -244,6 +254,9 @@ export default function SalesScreen() {
     setArrivalDate(item.arrival_date ?? '')
     setInvoicedDate(item.invoiced_date ?? '')
     setDeliveryDate(item.delivery_date ?? '')
+    setEmail(item.email ?? '')
+    setPhone(item.phone ?? '')
+    setBirthDate(item.birth_date ?? '')
     setError('')
     setShowForm(true)
   }
@@ -262,6 +275,9 @@ export default function SalesScreen() {
     if (!user) { setSaving(false); return }
 
     const formattedRut = formatRut(rut)
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setError('El correo electrónico no es válido'); setSaving(false); return
+    }
     const payload = {
       customer_name: customerName, rut: formattedRut, model, chassis, odv,
       purchase_type: purchaseType, status: status || null,
@@ -269,6 +285,9 @@ export default function SalesScreen() {
       arrival_date: arrivalDate || null,
       invoiced_date: invoicedDate || null,
       delivery_date: deliveryDate || null,
+      email: email || null,
+      phone: phone || null,
+      birth_date: birthDate || null,
     }
 
     if (editingId) {
@@ -493,6 +512,39 @@ export default function SalesScreen() {
           {viewMode
             ? <Text style={styles.viewValue}>{odv}</Text>
             : <TextInput style={styles.input} value={odv} onChangeText={setOdv} placeholderTextColor={Colors.textLight} placeholder="Orden de venta" />
+          }
+
+          <Text style={styles.label}>Correo electrónico</Text>
+          {viewMode
+            ? <Text style={styles.viewValue}>{email || '—'}</Text>
+            : <TextInput
+                style={[styles.input, email.length > 3 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && styles.inputError]}
+                value={email}
+                onChangeText={setEmail}
+                placeholderTextColor={Colors.textLight}
+                placeholder="correo@ejemplo.com"
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+          }
+
+          <Text style={styles.label}>Teléfono</Text>
+          {viewMode
+            ? <Text style={styles.viewValue}>{phone || '—'}</Text>
+            : <TextInput
+                style={styles.input}
+                value={phone}
+                onChangeText={v => setPhone(v.replace(/[^0-9]/g, ''))}
+                placeholderTextColor={Colors.textLight}
+                placeholder="Ej: 912345678"
+                keyboardType="numeric"
+              />
+          }
+
+          <Text style={styles.label}>Fecha de nacimiento</Text>
+          {viewMode
+            ? <Text style={styles.viewValue}>{birthDate ? formatDateCL(birthDate) : '—'}</Text>
+            : dateInput(birthDate, setBirthDate, true)
           }
 
           <Text style={styles.label}>Tipo de compra</Text>
