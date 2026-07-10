@@ -217,7 +217,8 @@ export default function DashboardScreen() {
                     const creditComision = Math.round(m.dealer / 1.19 * getCreditRate(m.credits))
                     const vppComision = m.vpp * VPP_COMMISSION
                     const insuranceComision = m.insurance * 23000
-                    const totalMes = creditComision + vppComision + m.mppCommission + insuranceComision
+                    const salesComision = m.sales * 70000
+                    const totalMes = salesComision + creditComision + vppComision + m.mppCommission + insuranceComision
                     return (
                       <View
                         key={i}
@@ -232,7 +233,7 @@ export default function DashboardScreen() {
                         onMouseLeave={() => setHoveredMonth(null)}
                       >
                         {isHovered && (
-                          <View style={[styles.tooltip, i >= 9 ? styles.tooltipLeft : styles.tooltipCenter]}>
+                          <View style={[styles.tooltip, i >= 9 ? styles.tooltipLeft : i <= 1 ? styles.tooltipRight : styles.tooltipCenter]}>
                             <Text style={styles.tooltipMonth}>{MONTH_LABELS[i]}-{String(selectedYear).slice(2)}</Text>
                             <View style={styles.tooltipRow}>
                               <View style={[styles.tooltipDot, { backgroundColor: Colors.secondary }]} />
@@ -355,6 +356,7 @@ const styles = StyleSheet.create({
   },
   tooltipCenter: { left: '50%' as any, transform: [{ translateX: -85 }] },
   tooltipLeft: { right: 0 },
+  tooltipRight: { left: 0 },
   tooltipMonth: { fontSize: 13, fontWeight: 'bold', color: Colors.text, marginBottom: 8 },
   tooltipRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
   tooltipDot: { width: 8, height: 8, borderRadius: 4 },
