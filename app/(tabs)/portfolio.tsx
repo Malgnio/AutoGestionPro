@@ -185,8 +185,11 @@ export default function PortfolioScreen() {
           <ActivityIndicator color={Colors.primary} style={{ marginTop: 60 }} />
         ) : (
           <>
-            <View style={styles.tableHeader}>
-              <View style={[styles.tableRow, styles.tableHead, { borderRadius: 12, borderBottomLeftRadius: 0, borderBottomRightRadius: 0 }]}>
+          {/* @ts-ignore */}
+          <div style={{ overflowX: 'auto', flex: 1, display: 'flex', flexDirection: 'column' }}>
+            {/* @ts-ignore */}
+            <div style={{ minWidth: 1100 }}>
+              <View style={[styles.tableRow, styles.tableHead, { borderRadius: 12, borderBottomLeftRadius: 0, borderBottomRightRadius: 0, marginHorizontal: 32 }]}>
                 <Text style={[styles.cell, styles.cellN, styles.headCell]}>#</Text>
                 <Text style={[styles.cell, styles.cellName, styles.headCell]}>Cliente</Text>
                 <Text style={[styles.cell, styles.cellRut, styles.headCell]}>RUT</Text>
@@ -200,65 +203,71 @@ export default function PortfolioScreen() {
                 <Text style={[styles.cell, styles.cellFlag, styles.headCell]}>VPP</Text>
                 <Text style={[styles.cell, styles.cellFlag, styles.headCell]}>MPP</Text>
               </View>
-            </View>
-          <ScrollView style={styles.tableContainer}>
-            {filtered.length === 0 ? (
-              <View style={styles.empty}>
-                <Text style={styles.emptyText}>Sin resultados para los filtros aplicados</Text>
-              </View>
-            ) : (
-              <View style={styles.table}>
-                {paginated.map((row, index) => (
-                  <View key={row.id} style={[styles.tableRow, index % 2 === 0 ? styles.rowEven : styles.rowOdd]}>
-                    <Text style={[styles.cell, styles.cellN]}>{(page - 1) * PAGE_SIZE + index + 1}</Text>
-                    <Text style={[styles.cell, styles.cellName]}>{row.customer_name}</Text>
-                    <Text style={[styles.cell, styles.cellRut]}>{formatRut(row.rut)}</Text>
-                    <Text style={[styles.cell, styles.cellEmail]} numberOfLines={1}>{row.email || '—'}</Text>
-                    <Text style={[styles.cell, styles.cellPhone]}>{row.phone || '—'}</Text>
-                    <Text style={[styles.cell, styles.cellBirth]}>{row.birth_date ? row.birth_date.split('-').reverse().join('/') : '—'}</Text>
-                    <Text style={[styles.cell, styles.cellModel]} numberOfLines={1}>{row.model}</Text>
-                    <View style={[styles.cell, styles.cellFlag]}>
-                      <View style={[styles.badge, { backgroundColor: row.hasCredit ? Colors.success : '#BDC3C7' }]}>
-                        <Text style={styles.badgeText}>{row.hasCredit ? 'Sí' : 'No'}</Text>
+            </div>
+            <ScrollView style={[styles.tableContainer, { flex: 1 }]}>
+              {/* @ts-ignore */}
+              <div style={{ minWidth: 1100 }}>
+              {filtered.length === 0 ? (
+                <View style={styles.empty}>
+                  <Text style={styles.emptyText}>Sin resultados para los filtros aplicados</Text>
+                </View>
+              ) : (
+                <View style={styles.table}>
+                  {paginated.map((row, index) => (
+                    <View key={row.id} style={[styles.tableRow, index % 2 === 0 ? styles.rowEven : styles.rowOdd]}>
+                      <Text style={[styles.cell, styles.cellN]}>{(page - 1) * PAGE_SIZE + index + 1}</Text>
+                      <Text style={[styles.cell, styles.cellName]}>{row.customer_name}</Text>
+                      <Text style={[styles.cell, styles.cellRut]}>{formatRut(row.rut)}</Text>
+                      <Text style={[styles.cell, styles.cellEmail]} numberOfLines={1}>{row.email || '—'}</Text>
+                      <Text style={[styles.cell, styles.cellPhone]}>{row.phone || '—'}</Text>
+                      <Text style={[styles.cell, styles.cellBirth]}>{row.birth_date ? row.birth_date.split('-').reverse().join('/') : '—'}</Text>
+                      <Text style={[styles.cell, styles.cellModel]} numberOfLines={1}>{row.model}</Text>
+                      <View style={[styles.cell, styles.cellFlag]}>
+                        <View style={[styles.badge, { backgroundColor: row.hasCredit ? Colors.success : '#BDC3C7' }]}>
+                          <Text style={styles.badgeText}>{row.hasCredit ? 'Sí' : 'No'}</Text>
+                        </View>
+                      </View>
+                      <Text style={[styles.cell, styles.cellYear]}>{new Date(row.sale_month).getUTCFullYear()}</Text>
+                      <Text style={[styles.cell, styles.cellMonth]}>{MONTHS[new Date(row.sale_month).getUTCMonth()]}</Text>
+                      <View style={[styles.cell, styles.cellFlag]}>
+                        <View style={[styles.badge, { backgroundColor: row.hasVpp ? Colors.success : '#BDC3C7' }]}>
+                          <Text style={styles.badgeText}>{row.hasVpp ? 'Sí' : 'No'}</Text>
+                        </View>
+                      </View>
+                      <View style={[styles.cell, styles.cellFlag]}>
+                        <View style={[styles.badge, { backgroundColor: row.hasMpp ? Colors.success : '#BDC3C7' }]}>
+                          <Text style={styles.badgeText}>{row.hasMpp ? 'Sí' : 'No'}</Text>
+                        </View>
                       </View>
                     </View>
-                    <Text style={[styles.cell, styles.cellYear]}>{new Date(row.sale_month).getUTCFullYear()}</Text>
-                    <Text style={[styles.cell, styles.cellMonth]}>{MONTHS[new Date(row.sale_month).getUTCMonth()]}</Text>
-                    <View style={[styles.cell, styles.cellFlag]}>
-                      <View style={[styles.badge, { backgroundColor: row.hasVpp ? Colors.success : '#BDC3C7' }]}>
-                        <Text style={styles.badgeText}>{row.hasVpp ? 'Sí' : 'No'}</Text>
-                      </View>
-                    </View>
-                    <View style={[styles.cell, styles.cellFlag]}>
-                      <View style={[styles.badge, { backgroundColor: row.hasMpp ? Colors.success : '#BDC3C7' }]}>
-                        <Text style={styles.badgeText}>{row.hasMpp ? 'Sí' : 'No'}</Text>
-                      </View>
-                    </View>
-                  </View>
-                ))}
-              </View>
-            )}
+                  ))}
+                </View>
+              )}
+              {/* @ts-ignore */}
+              </div>
 
-            {totalPages > 1 && (
-              <View style={styles.pagination}>
-                <TouchableOpacity
-                  style={[styles.pageBtn, page === 1 && styles.pageBtnDisabled]}
-                  onPress={() => setPage(p => Math.max(1, p - 1))}
-                  disabled={page === 1}
-                >
-                  <Text style={[styles.pageBtnText, page === 1 && styles.pageBtnTextDisabled]}>‹ Anterior</Text>
-                </TouchableOpacity>
-                <Text style={styles.pageInfo}>Página {page} de {totalPages} · {filtered.length} registros</Text>
-                <TouchableOpacity
-                  style={[styles.pageBtn, page === totalPages && styles.pageBtnDisabled]}
-                  onPress={() => setPage(p => Math.min(totalPages, p + 1))}
-                  disabled={page === totalPages}
-                >
-                  <Text style={[styles.pageBtnText, page === totalPages && styles.pageBtnTextDisabled]}>Siguiente ›</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </ScrollView>
+              {totalPages > 1 && (
+                <View style={styles.pagination}>
+                  <TouchableOpacity
+                    style={[styles.pageBtn, page === 1 && styles.pageBtnDisabled]}
+                    onPress={() => setPage(p => Math.max(1, p - 1))}
+                    disabled={page === 1}
+                  >
+                    <Text style={[styles.pageBtnText, page === 1 && styles.pageBtnTextDisabled]}>‹ Anterior</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.pageInfo}>Página {page} de {totalPages} · {filtered.length} registros</Text>
+                  <TouchableOpacity
+                    style={[styles.pageBtn, page === totalPages && styles.pageBtnDisabled]}
+                    onPress={() => setPage(p => Math.min(totalPages, p + 1))}
+                    disabled={page === totalPages}
+                  >
+                    <Text style={[styles.pageBtnText, page === totalPages && styles.pageBtnTextDisabled]}>Siguiente ›</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </ScrollView>
+          {/* @ts-ignore */}
+          </div>
           </>
         )}
       </View>
@@ -281,8 +290,8 @@ const styles = StyleSheet.create({
   clearBtn: { paddingHorizontal: 12, paddingVertical: 7, borderRadius: 8, borderWidth: 1, borderColor: Colors.danger },
   clearBtnText: { fontSize: 12, color: Colors.danger, fontWeight: '600' },
   tableHeader: { paddingHorizontal: 32, backgroundColor: Colors.background },
-  tableContainer: { flex: 1, paddingHorizontal: 32 },
-  table: { backgroundColor: Colors.white, borderBottomLeftRadius: 12, borderBottomRightRadius: 12, overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 6, elevation: 2 },
+  tableContainer: { flex: 1 },
+  table: { backgroundColor: Colors.white, marginHorizontal: 32, borderBottomLeftRadius: 12, borderBottomRightRadius: 12, overflow: 'hidden', shadowColor: '#000', shadowOpacity: 0.05, shadowRadius: 6, elevation: 2 },
   tableRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 12, paddingHorizontal: 16 },
   tableHead: { backgroundColor: Colors.primary },
   rowEven: { backgroundColor: Colors.white },
