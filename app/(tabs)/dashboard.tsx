@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useWindowDimensions, View, Text, StyleSheet, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native'
+import { createPortal } from 'react-dom'
 import { supabase } from '../../lib/supabase'
 import { Colors } from '../../constants/colors'
 import { usePeriod } from '../../contexts/PeriodContext'
@@ -48,7 +49,7 @@ export default function DashboardScreen() {
   const nextYear = Math.max(...availableYears) + 1
   const [loading, setLoading] = useState(true)
   const [monthData, setMonthData] = useState<MonthData[]>(Array(12).fill({ sales: 0, credits: 0, dealer: 0, vpp: 0, mppCommission: 0, mppCount: 0, insurance: 0 }))
-  const [hoveredMonth, setHoveredMonth] = useState<number | null>(null)
+  const [hoveredMonth, setHoveredMonth] = useState<{ i: number, x: number, y: number } | null>(null)
   const [avgTarget, setAvgTarget] = useState(70)
   const [exporting, setExporting] = useState(false)
 
@@ -213,12 +214,7 @@ export default function DashboardScreen() {
               <View style={[styles.chartWrapper, isMobile && { minWidth: 600 }]}>
                 <View style={styles.chart}>
                   {monthData.map((m, i) => {
-                    const isHovered = hoveredMonth === i
-                    const creditComision = Math.round(m.dealer / 1.19 * getCreditRate(m.credits))
-                    const vppComision = m.vpp * VPP_COMMISSION
-                    const insuranceComision = m.insurance * 23000
-                    const salesComision = m.sales * 70000
-                    const totalMes = salesComision + creditComision + vppComision + m.mppCommission + insuranceComision
+                    const isHovered = hoveredMonth?.i === i
                     return (
                       <View
                         key={i}
@@ -226,42 +222,12 @@ export default function DashboardScreen() {
                           styles.barGroup,
                           i % 2 === 0 && styles.barGroupAlt,
                           isHovered && styles.barGroupHovered,
-                          isHovered && { zIndex: 100 } as any,
                         ]}
                         // @ts-ignore
-                        onMouseEnter={() => setHoveredMonth(i)}
+                        onMouseEnter={(e: any) => setHoveredMonth({ i, x: e.clientX, y: e.clientY })}
+                        onMouseMove={(e: any) => setHoveredMonth({ i, x: e.clientX, y: e.clientY })}
                         onMouseLeave={() => setHoveredMonth(null)}
                       >
-                        {isHovered && (
-                          <View style={[styles.tooltip, i >= 9 ? styles.tooltipLeft : i <= 1 ? styles.tooltipRight : styles.tooltipCenter]}>
-                            <Text style={styles.tooltipMonth}>{MONTH_LABELS[i]}-{String(selectedYear).slice(2)}</Text>
-                            <View style={styles.tooltipRow}>
-                              <View style={[styles.tooltipDot, { backgroundColor: Colors.secondary }]} />
-                              <Text style={styles.tooltipText}>Ventas: <Text style={styles.tooltipBold}>{m.sales}</Text></Text>
-                            </View>
-                            <View style={styles.tooltipRow}>
-                              <View style={[styles.tooltipDot, { backgroundColor: Colors.success }]} />
-                              <Text style={styles.tooltipText}>Créditos: <Text style={styles.tooltipBold}>{m.credits}</Text></Text>
-                            </View>
-                            <View style={styles.tooltipRow}>
-                              <View style={[styles.tooltipDot, { backgroundColor: Colors.primary }]} />
-                              <Text style={styles.tooltipText}>VPP: <Text style={styles.tooltipBold}>{m.vpp}</Text></Text>
-                            </View>
-                            <View style={styles.tooltipRow}>
-                              <View style={[styles.tooltipDot, { backgroundColor: '#2471A3' }]} />
-                              <Text style={styles.tooltipText}>MPP: <Text style={styles.tooltipBold}>{m.mppCount}</Text></Text>
-                            </View>
-                            <View style={styles.tooltipRow}>
-                              <View style={[styles.tooltipDot, { backgroundColor: '#E67E22' }]} />
-                              <Text style={styles.tooltipText}>Seguros: <Text style={styles.tooltipBold}>{m.insurance}</Text></Text>
-                            </View>
-                            {totalMes > 0 && (
-                              <View style={[styles.tooltipRow, { borderTopWidth: 1, borderTopColor: Colors.border, paddingTop: 6, marginTop: 2 }]}>
-                                <Text style={[styles.tooltipText, { color: Colors.accent }]}>Comisión total: <Text style={[styles.tooltipBold, { color: Colors.accent }]}>${totalMes.toLocaleString('es-CL')}</Text></Text>
-                              </View>
-                            )}
-                          </View>
-                        )}
                         <View style={styles.bars}>
                           <View style={styles.barWrapper}>
                             <Text style={styles.barVal}>{m.sales > 0 ? m.sales : ''}</Text>
@@ -284,7 +250,7 @@ export default function DashboardScreen() {
                             <View style={[styles.bar, { height: Math.max(Math.round((m.insurance / maxBar) * BAR_HEIGHT), m.insurance > 0 ? 2 : 0), backgroundColor: '#E67E22' }]} />
                           </View>
                         </View>
-                        <Text style={[styles.barLabel, isHovered && { color: Colors.primary, fontWeight: 'bold' }]}>{MONTH_LABELS[i]}</Text>
+                        <Text style={[styles.barLabel, isHovered && { color: Colors.primary, fontWeight: '700' }]}>{MONTH_LABELS[i]}</Text>
                       </View>
                     )
                   })}
@@ -295,6 +261,50 @@ export default function DashboardScreen() {
 
         </ScrollView>
       )}
+
+      {hoveredMonth !== null && typeof document !== 'undefined' && (() => {
+        const { i, x, y } = hoveredMonth
+        const m = monthData[i]
+        const creditComision = Math.round(m.dealer / 1.19 * getCreditRate(m.credits))
+        const vppComision = m.vpp * VPP_COMMISSION
+        const insuranceComision = m.insurance * 23000
+        const salesComision = m.sales * 70000
+        const totalMes = salesComision + creditComision + vppComision + m.mppCommission + insuranceComision
+        const TOOLTIP_W = 190
+        const left = Math.min(x + 12, window.innerWidth - TOOLTIP_W - 8)
+        const top = Math.max(y - 180, 8)
+        return createPortal(
+          <div style={{
+            position: 'fixed', left, top, zIndex: 9999,
+            backgroundColor: 'white', borderRadius: 10, padding: 14,
+            boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+            border: `1px solid ${Colors.border}`,
+            minWidth: TOOLTIP_W, pointerEvents: 'none',
+          }}>
+            <div style={{ fontSize: 13, fontWeight: 'bold', color: Colors.text, marginBottom: 8 }}>
+              {MONTH_LABELS[i]}-{String(selectedYear).slice(2)}
+            </div>
+            {[
+              { color: Colors.secondary, label: 'Ventas', val: m.sales },
+              { color: Colors.success,   label: 'Créditos', val: m.credits },
+              { color: Colors.primary,   label: 'VPP', val: m.vpp },
+              { color: '#2471A3',        label: 'MPP', val: m.mppCount },
+              { color: '#E67E22',        label: 'Seguros', val: m.insurance },
+            ].map(({ color, label, val }) => (
+              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                <div style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: color, flexShrink: 0 }} />
+                <span style={{ fontSize: 12, color: Colors.textLight }}>{label}: <strong style={{ color: Colors.text }}>{val}</strong></span>
+              </div>
+            ))}
+            {totalMes > 0 && (
+              <div style={{ borderTop: `1px solid ${Colors.border}`, paddingTop: 6, marginTop: 4, fontSize: 12, color: Colors.accent }}>
+                Comisión total: <strong>${totalMes.toLocaleString('es-CL')}</strong>
+              </div>
+            )}
+          </div>,
+          document.body
+        )
+      })()}
     </View>
   )
 }
@@ -348,18 +358,4 @@ const styles = StyleSheet.create({
   bar: { width: 14, borderRadius: 3, minHeight: 2 },
   barVal: { fontSize: 9, color: Colors.textLight, marginBottom: 2 },
   barLabel: { fontSize: 10, color: Colors.textLight, textAlign: 'center' },
-  tooltip: {
-    position: 'absolute' as any, bottom: 50, zIndex: 200,
-    backgroundColor: Colors.white, borderRadius: 10, padding: 14,
-    shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 12, elevation: 8,
-    borderWidth: 1, borderColor: Colors.border, minWidth: 170,
-  },
-  tooltipCenter: { left: '50%' as any, transform: [{ translateX: -85 }] },
-  tooltipLeft: { right: 0 },
-  tooltipRight: { left: 0 },
-  tooltipMonth: { fontSize: 13, fontWeight: 'bold', color: Colors.text, marginBottom: 8 },
-  tooltipRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 },
-  tooltipDot: { width: 8, height: 8, borderRadius: 4 },
-  tooltipText: { fontSize: 12, color: Colors.textLight },
-  tooltipBold: { fontWeight: 'bold', color: Colors.text },
 })
