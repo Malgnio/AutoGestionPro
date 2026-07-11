@@ -129,6 +129,14 @@ transform: [{ translateX: 0 }]    // abierto
 transition: 'transform 0.3s ease'
 ```
 
+## Ventas — Campos adicionales (drawer)
+- `email`: correo electrónico (opcional, valida formato si se ingresa)
+- `phone`: teléfono (solo números)
+- `birth_date`: fecha de nacimiento (sin restricción de fecha máxima — `noMax=true` en `dateInput`)
+- Estos 3 campos aparecen en el drawer después de OdV, **NO en la grilla de ventas**
+- Se muestran en modo vista (👁️) y en tabla Clientes
+- Columnas Supabase: `email TEXT`, `phone TEXT`, `birth_date DATE` en tabla `sales`
+
 ## Ventas — Estado y fechas
 - `status`: nullable (sin default). Valores: 'Solicitado' | 'Llegada Suc.' | 'Facturado' | 'Entregado' | null
 - Constraint en Supabase: `sales_status_check` incluye los 4 valores
@@ -195,9 +203,10 @@ transition: 'transform 0.3s ease'
 ## Pantalla Clientes (portfolio.tsx)
 - Ruta: `/(tabs)/portfolio` — sidebar: "Clientes" (👤), entre MPP y Sueldo
 - Carga datos de los últimos 3 años (año actual - 2 hasta año actual)
-- Tabla con columnas: #, Cliente, RUT (con puntos vía `formatRut`), Modelo, Crédito (Sí/No), Año, Mes, VPP (Sí/No), MPP (Sí/No)
+- Tabla con columnas: #, Cliente, RUT (con puntos vía `formatRut`), **Correo, Teléfono, Nacimiento**, Modelo, Crédito (Sí/No), Año, Mes, VPP (Sí/No), MPP (Sí/No)
+- Correo/Teléfono/Nacimiento vienen de la tabla `sales` (campos `email`, `phone`, `birth_date`) — muestran `—` si están vacíos
 - Sí/No se determina por RUT normalizado (sin puntos) en las tablas credits/vpp/mpp del mismo año
-- Header de tabla fijo (fuera del ScrollView) — no hace scroll con las filas
+- **Tabla HTML nativa** (`<table>`) con `overflow-x: auto` — scroll horizontal cuando no entran todas las columnas. minWidth: 1180px
 - **Filtros**: dropdown Año (Todos/2024/2025/2026), Mes (Todos + 12 meses), Crédito (Todos/Sí/No)
 - **Búsqueda**: por nombre (contains) o RUT (startsWith sobre RUT formateado con puntos)
 - **Paginación**: 20 filas por página, se resetea al cambiar filtros
@@ -228,6 +237,7 @@ transition: 'transform 0.3s ease'
 - **Sin tag** — (2026-07-05): responsive Dashboard + Sidebar móvil, inicio responsive Ventas, fix AlertBell móvil
 - **Sin tag** — (2026-07-06): exportar Excel desde Dashboard (mes específico + año completo), datos históricos 2025 completos (Ene-Jun)
 - **Sin tag** — (2026-07-08): políticas UPDATE RLS en todas las tablas, botón "Exportar Mes" en todas las pantallas, rediseño Excel con xlsx-js-style, gráfico dashboard con fondos alternados por mes, botón "Compra con Crédito" detecta duplicados al abrir drawer
+- **Sin tag** — (2026-07-09): campos Correo/Teléfono/Nacimiento en drawer de Ventas y en tabla Clientes, tooltip dashboard via portal (scroll con mouse), tabla Clientes reescrita como HTML nativo con scroll horizontal
 
 ## Exportar Excel
 - **Dashboard**: botón "⬇ Exportar Año" verde — exporta año completo directamente (sin menú)
