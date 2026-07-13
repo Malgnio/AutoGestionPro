@@ -257,7 +257,16 @@ transition: 'transform 0.3s ease'
 - 2025: Julio a Diciembre completos
 - Pendiente: Diciembre 2024 hacia atrás
 
+## WhatsApp automático (pendiente implementar)
+- Objetivo: enviar mensajes automáticos a **clientes** cuando se levanta una alerta (≥3 días hábiles desde entrega sin gestionar)
+- Requiere cuenta oficial de WhatsApp Business aprobada por Meta (obligatorio para mensajes a números externos)
+- **Opción evaluada**: Meta Business Platform directo — 1.000 conversaciones/mes gratis, suficiente para el volumen actual
+- Alternativa de pago simple: Twilio WhatsApp API (~$0.005/msg)
+- Make/Zapier no aplica para clientes externos sin cuenta Business aprobada
+- Flujo previsto: alerta en app → Edge Function Supabase → API WhatsApp → mensaje al cliente
+
 ## Pendiente
+- Implementar WhatsApp automático para alertas (ver sección arriba)
 - Continuar datos históricos: Diciembre 2024 hacia atrás
 - Terminar responsive: Créditos, Seguros, VPP, MPP, Sueldo, Clientes (Ventas parcial — drawer aún con problema de ancho)
 - ~~Verificar políticas UPDATE en otras tablas~~ — todas creadas (sales, credits, insurance, vpp, mpp)
